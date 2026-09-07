@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Dados e resultados
+*.pdf
+*.xlsx
+*.xls
+*.csv
+*.zip
+
+# Pastas que podem conter dados/evidências reais
+evidencias/
+resultado/
+resultados/
+outputs/
+temp/

@@ -1,0 +1,10 @@
+PERSEUS — MOTOR E SAÍDAS AUDITADOS
+
+Encerre o servidor anterior com Control+C e abra iniciar.command DESTA pasta.
+Processe o PDF novamente. O resultado oferece Baixar Excel e Baixar relatório em PDF.
+
+Agosto: fatura 2026/08, coleta 07/2026; 2.050 encontrados; diferença 0; 24 registros em revisão.
+Setembro: fatura 2026/09, coleta 08/2026; 2.211 encontrados contra 2.213 informados; diferença -2; 28 registros em revisão.
+
+Cada execução recebe nomes próprios. A aba Divergências inclui também diferenças de quantidade.
+Leia AUDITORIA_ATUAL.md para evidências, correções, testes e limites.
