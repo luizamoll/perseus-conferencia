@@ -63,16 +63,16 @@ Para competências futuras ainda não observadas na fonte, o fallback é `Fatura
 
 ## Cores de Referência
 
-As cores abaixo reproduzem o preenchimento dos cabeçalhos/totais dos quadros da aba `Licenças Base`:
+As cores abaixo são as cores efetivas dos cabeçalhos/totais da aba `Licenças Base`, já considerando tema e tonalidade aplicados pelo Excel:
 
-- Fevereiro: `#D1E1D3`
+- Fevereiro: `#C2F1C8`
 - Março: `#FBE3D6`
 - Abril: `#F9F9F9`
-- Maio: `#D1E1D3`
+- Maio: `#C2F1C8`
 - Junho: `#F2AA84`
 - Julho: `#F9F9F9`
-- Agosto: `#AF5526`
-- Setembro: `#D9AAD4`
+- Agosto: `#C04F15`
+- Setembro: `#E59EDD`
 
 Meses sem cor observada usam um neutro institucional até que uma fonte oficial seja fornecida.
 
