@@ -28,6 +28,7 @@ class ApplicationTests(unittest.TestCase):
                 self.assertTrue(z.read(job['pdf']).startswith(b'%PDF-'))
                 self.assertTrue(z.read(job['pdf_alunos']).startswith(b'%PDF-'))
                 self.assertIn('resultado.json',z.namelist())
+                self.assertIn('biblioteca_divergencias.json',z.namelist())
             self.assertEqual(job['metadados']['arquivo'],'origem.pdf')
 
     def test_todas_pendencias_disponiveis_para_interface(self):
@@ -86,7 +87,7 @@ class ApplicationTests(unittest.TestCase):
             wb=load_workbook(Path(d)/'resultado'/job['excel'])
             self.assertEqual(wb.sheetnames,['Resumo','Referência','Alunos','Divergências'])
             rows=list(wb['Alunos'].values);headers=rows[0];data=[dict(zip(headers,row)) for row in rows[1:]]
-            self.assertEqual([r['STATUS_CURSO'] for r in data],['GRADUAÇÃO','DI','DI','NÃO LOCALIZADO'])
+            self.assertEqual([r['STATUS_CURSO'] for r in data],['GRADUAÇÃO','DI','GRADUAÇÃO','NÃO LOCALIZADO'])
             self.assertEqual([r['Classificação'] for r in data],['CLASSIFICADO','CLASSIFICADO','CLASSIFICADO','REVISAR'])
             self.assertTrue(data[3]['Motivo da revisão'])
             self.assertTrue(all(r['COMPETENCIA'] for r in data))
@@ -97,6 +98,8 @@ class ApplicationTests(unittest.TestCase):
             saved=json.loads((Path(d)/'resultado/resultado.json').read_text())
             self.assertEqual(saved['registros'],antes)
             self.assertEqual(len(saved['classificacao']['auditoria']),4)
+            biblioteca=json.loads((Path(d)/'resultado/biblioteca_divergencias.json').read_text())
+            self.assertEqual(biblioteca['siglas_nao_localizadas'],[{'sigla':'LPI','ocorrencias':1}])
 
     def test_excel_recusa_classificacao_desalinhada(self):
         from classificacao import classificar_resultado
