@@ -23,17 +23,18 @@ CATEGORIAS_REFERENCIA = [
     "MÚLTIPLAS CATEGORIAS",
 ]
 
-# Cores dos cabeçalhos/totais dos quadros de referência na planilha fonte.
+# Cores efetivas dos cabeçalhos/totais dos quadros de referência na planilha fonte.
+# Os valores abaixo já consideram as cores de tema + tint aplicadas pelo Excel.
 # Para meses ainda não observados, usa-se um neutro institucional.
 CORES_REFERENCIA = {
-    2: "D1E1D3",  # Fevereiro
+    2: "C2F1C8",  # Fevereiro
     3: "FBE3D6",  # Março
     4: "F9F9F9",  # Abril
-    5: "D1E1D3",  # Maio
+    5: "C2F1C8",  # Maio
     6: "F2AA84",  # Junho
     7: "F9F9F9",  # Julho
-    8: "AF5526",  # Agosto
-    9: "D9AAD4",  # Setembro
+    8: "C04F15",  # Agosto
+    9: "E59EDD",  # Setembro
 }
 COR_REFERENCIA_PADRAO = "E7EFEA"
 
