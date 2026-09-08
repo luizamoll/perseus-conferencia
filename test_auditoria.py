@@ -48,7 +48,7 @@ class AuditoriaTests(unittest.TestCase):
         self.assertEqual(summary['Registros para revisão'],1)
         self.assertGreater(len(r['revisao']),1)
         self.assertEqual(len([d for d in divergencias(r) if d['_registro']]),1)
-        self.assertIn('legenda oficial',divergencias(r)[1]['Motivo compreensível'])
+        self.assertIn('biblioteca operacional',divergencias(r)[1]['Motivo compreensível'])
 
     def test_total_difference_is_not_an_invented_student(self):
         r=self.resultado();ds=divergencias(r)
@@ -115,16 +115,19 @@ class AuditoriaTests(unittest.TestCase):
         h.responder(200,b'%PDF-test','application/pdf','resultado.pdf')
         self.assertEqual(headers['Cache-Control'],'no-store');self.assertIn('attachment;',headers['Content-Disposition'])
 
-    def test_regra_oficial_substitui_ambiguidades_historicas(self):
+    def test_biblioteca_operacional_reproduz_excecoes_da_referencia(self):
         from classificacao import classificar_registro
         esperados={
-            'CIB':'DI','ESGSC, PSO':'POS','DIREM, MBAAD':'MÚLTIPLAS CATEGORIAS','DA, DIR':'MÚLTIPLAS CATEGORIAS'
+            'CIB':'GRADUAÇÃO','TEOC':'GRADUAÇÃO','GEQUA':'POS',
+            'ESGSC, PSO':'GRADUAÇÃO','DIREM, MBAAD':'GRADUAÇÃO','DA, DIR':'GRADUAÇÃO'
         }
         for course,categoria in esperados.items():
             a=classificar_registro({'Curso':course});self.assertEqual(a['categoria_final'],categoria);self.assertEqual(a['status_final'],'CLASSIFICADO')
-        for course in ['15','LPI','PCG','SETRA']:
+        for course in ['LPI','PCG','SETRA']:
             a=classificar_registro({'Curso':course});self.assertEqual(a['categoria_final'],'NÃO LOCALIZADO');self.assertEqual(a['status_final'],'REVISAR')
             self.assertTrue(all(motivo_humano(m) for m in a['motivos_revisao']))
+        a=classificar_registro({'Curso':'15, CEXT, CSAP, GN'})
+        self.assertEqual(a['categoria_final'],'DI');self.assertEqual(a['status_final'],'REVISAR')
 
 
 if __name__=='__main__':
