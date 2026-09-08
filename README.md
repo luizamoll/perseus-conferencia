@@ -10,48 +10,49 @@ A interface mostra os totais do documento, o quadro colorido da referência, a *
 
 ## Como o STATUS_CURSO é decidido
 
-O sistema preserva duas fontes separadas e auditáveis:
+O sistema agora separa três camadas:
 
-1. `regras_status_curso.json` — transcrição da aba `Legenda_Cursos_Status`;
-2. `biblioteca/mapeamentos_operacionais.json` — exceções necessárias para reproduzir os quadros mensais já validados na planilha mestre.
+1. **regra de negócio confirmada** — fatos esclarecidos pela área;
+2. `regras_status_curso.json` — transcrição da aba `Legenda_Cursos_Status`;
+3. **compatibilidade histórica** — exceções necessárias para explicar/reproduzir quadros mensais antigos.
 
-A biblioteca não apaga a legenda. Exemplo importante: a legenda informa `CIB → DI`, mas os quadros operacionais de agosto/setembro usam CIB como **Graduação**. Essa diferença fica explícita na biblioteca, em vez de ser escondida no código.
+Regras de negócio confirmadas em 08/09/2026:
+
+- `LPI` = Licenciatura → **GRADUAÇÃO**;
+- `TEOC` = Graduação → **GRADUAÇÃO**;
+- `EFB` = Bacharelado → **GRADUAÇÃO**;
+- `PCG` = Pós → **POS**;
+- `DI` significa compra de **disciplina isolada**, por exemplo uma matéria como Lógica de Programação.
+
+A biblioteca não apaga a legenda. Exemplo importante: a legenda informa `CIB → DI`, mas os quadros históricos de agosto/setembro usam CIB como **Graduação**. Como a regra específica de CIB ainda não foi esclarecida, isso permanece marcado como compatibilidade histórica, não como verdade empresarial.
 
 Regras gerais:
 
 - mesma categoria → mantém a categoria;
 - categorias diferentes → `MÚLTIPLAS CATEGORIAS`;
-- combinação com exceção operacional confirmada → usa a biblioteca;
-- sigla conhecida apenas pela biblioteca → usa a categoria operacional registrada;
-- sigla ainda desconhecida → mantém o que puder ser classificado pelas demais siglas e marca o registro como `REVISAR`; se não houver nenhuma categoria conhecida, vira `NÃO LOCALIZADO`.
+- sigla desconhecida junto de siglas conhecidas → preserva a categoria sustentada e marca `REVISAR`;
+- nenhuma categoria conhecida → `NÃO LOCALIZADO`.
 
 ## Biblioteca de divergências
 
 A pasta `biblioteca/` contém:
 
-- `mapeamentos_operacionais.json` — exceções versionadas e auditáveis;
+- `mapeamentos_operacionais.json` — regras confirmadas, compatibilidades históricas e pendências conhecidas;
 - `README.md` — explicação da precedência;
 - `nao_localizados.json` — criado no computador ao processar os PDFs e ignorado pelo Git. Guarda apenas **siglas, contagens e competências**, nunca nomes/identificadores de alunos.
 
 Cada execução também gera `biblioteca_divergencias.json` dentro do resultado e do ZIP técnico.
 
-## Referências reais validadas
+As pendências empresariais conhecidas agora são:
 
-A nova classificação reproduz exatamente os quadros da planilha fornecida.
+- `SETRA` — significado/categoria ainda desconhecidos;
+- `15` — valor encontrado no campo Curso e ainda não explicado.
 
-**Agosto/2026 — total 2.050**
+`LPI` e `PCG` deixaram de ser pendências.
 
-- GRADUAÇÃO 883
-- MESTRADO 324
-- DI 617
-- MBA 10
-- POS 13
-- CURSO LIVRE 0
-- APERFEIÇOAMENTO 15
-- NÃO LOCALIZADO 2
-- MÚLTIPLAS CATEGORIAS 186
+## Referência histórica x regra atual
 
-**Setembro/2026 — total 2.211**
+A planilha histórica de setembro possui total 2.211 e distribui:
 
 - GRADUAÇÃO 945
 - MESTRADO 325
@@ -63,9 +64,24 @@ A nova classificação reproduz exatamente os quadros da planilha fornecida.
 - NÃO LOCALIZADO 4
 - MÚLTIPLAS CATEGORIAS 189
 
-A conferência de quantidade do PDF continua independente: agosto permanece 2.050/2.050; setembro permanece 2.213 informados contra 2.211 extraídos, diferença −2. Nenhum registro é criado para fechar o total.
+Com os novos esclarecimentos de negócio, mantendo as demais compatibilidades históricas apenas para comparação, setembro passa a:
 
-As siglas ainda sem decisão operacional em setembro são `15`, `LPI`, `PCG` e `SETRA`. O código `15` aparece em um registro que também contém cursos DI; por isso a sigla entra na biblioteca de revisão, mas o aluno continua classificado como DI. Assim há cinco ocorrências de siglas pendentes, porém quatro linhas em `NÃO LOCALIZADO`.
+- **GRADUAÇÃO 947**
+- MESTRADO 325
+- DI 710
+- MBA 10
+- **POS 14**
+- CURSO LIVRE 0
+- APERFEIÇOAMENTO 15
+- **NÃO LOCALIZADO 1** (`SETRA`)
+- MÚLTIPLAS CATEGORIAS 189
+- total **2.211**
+
+A diferença é explicada por dois alunos `LPI` que saem de NÃO LOCALIZADO para GRADUAÇÃO e um aluno `PCG` que sai de NÃO LOCALIZADO para POS.
+
+O código `15` aparece junto de cursos já sustentados como DI; por isso permanece uma pendência de qualidade de dado sem criar uma linha adicional em NÃO LOCALIZADO.
+
+A conferência de quantidade do PDF continua independente: agosto permanece 2.050/2.050; setembro permanece 2.213 informados contra 2.211 extraídos, diferença −2. Nenhum registro é criado para fechar o total.
 
 ## Saídas
 
@@ -88,7 +104,7 @@ A branch `feat/nova-interface` executa esses testes automaticamente no GitHub Ac
 - `perseus.py`: extração e conferência do PDF.
 - `classificacao.py`: classificação e rastreabilidade das fontes.
 - `regras_status_curso.json`: legenda oficial.
-- `biblioteca/`: exceções operacionais e memória local de siglas pendentes.
+- `biblioteca/`: regras de negócio, compatibilidade histórica e memória local de pendências.
 - `referencia.py`: `COMPETENCIA`, cores e consolidação.
 - `exportacao.py`: XLSX e relatório executivo.
 - `pdf_alunos.py`: lista completa em PDF.
