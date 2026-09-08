@@ -31,6 +31,26 @@ $('drop').addEventListener('drop',e=>{e.preventDefault();dragDepth=0;$('drop').c
 window.addEventListener('dragover',e=>e.preventDefault());window.addEventListener('drop',e=>e.preventDefault());
 async function json(url,opts){let response;try{response=await fetch(url,opts);}catch{throw new Error('Conexão local interrompida.');}let data;try{data=await response.json();}catch{throw new Error('Resposta inválida do programa local.');}if(!response.ok)throw new Error(data.erro||'Não foi possível completar a operação.');return data;}
 function texto(tag,value,className){const el=document.createElement(tag);el.textContent=value??'—';if(className)el.className=className;return el;}
+function renderizarReferencia(job){
+ const referencia=job.referencia||{},itens=job.consolidacao||[];
+ const total=itens.reduce((s,item)=>s+Number(item.quantidade||0),0);
+ const cor=/^[0-9A-F]{6}$/i.test(referencia.cor||'')?`#${referencia.cor}`:'#E7EFEA';
+ const box=$('reference-summary');box.style.setProperty('--reference-color',cor);
+ $('reference-title').textContent=referencia.titulo||'Referência';
+ $('reference-competence').textContent=job.competencia_operacional?`COMPETENCIA: ${job.competencia_operacional}`:'';
+ $('reference-total').textContent=numero(total);
+ const cards=$('reference-cards');cards.replaceChildren();
+ for(const item of itens){
+   const quantidade=Number(item.quantidade||0),pct=total?quantidade/total*100:0;
+   const card=document.createElement('article');card.className='reference-card';
+   if(item.categoria==='NÃO LOCALIZADO'&&quantidade)card.classList.add('is-review');
+   const topo=document.createElement('div');topo.className='reference-card-top';
+   topo.append(texto('span',item.categoria,'reference-category'),texto('i','', 'reference-dot'));
+   const valor=texto('strong',numero(quantidade));
+   const proporcao=texto('small',`${new Intl.NumberFormat('pt-BR',{maximumFractionDigits:1}).format(pct)}% da referência`);
+   card.append(topo,valor,proporcao);cards.appendChild(card);
+ }
+}
 function concluir(job){
  const c=job.conferencia[0],m=job.metadados,r=job.resumo[0],diff=r['Diferença'],revisoes=r['Registros para revisão'];
  ocupado=false;$('loading').hidden=true;$('setup').hidden=true;$('result').hidden=false;$('error').hidden=true;etapa(3);$('result-title').focus();inicioDaTela();
@@ -42,9 +62,10 @@ function concluir(job){
  $('diferenca').className=diff!==0?'attention-text':'';$('revisoes').className=revisoes?'attention-text':'';
  $('outcome').textContent=diff!==0?'≠ Diferença de quantidade encontrada':temRevisao?'! Totais conferem. Há revisões pendentes.':'✓ Conferência sem diferença';
  $('outcome-description').textContent=diff!==0?`O relatório informa ${numero(c['Coletado informado'])} registros e encontramos ${numero(c['Linhas extraídas'])}. Confira a diferença e as pendências abaixo.`:temRevisao?`As quantidades coincidem. ${numero(revisoes)} registros precisam de revisão humana${r['Alertas sem registro associado']?' e há alertas de leitura adicionais':''}.`:'As quantidades coincidem e não foram identificadas pendências de leitura ou classificação.';
+ renderizarReferencia(job);
  for(const [id,name] of [['download',job.excel],['download-pdf',job.pdf],['download-alunos-pdf',job.pdf_alunos],['download-json','resultado.json'],['download-csv','alunos.csv'],['download-all','resultado.zip']]){const link=$(id);link.href=`/download/${encodeURIComponent(job.id)}/${encodeURIComponent(name)}`;link.download=name;}
  $('review-count').textContent=`${numero(job.total_pendencias)} ${job.total_pendencias===1?'pendência':'pendências'}`;
- $('review-caption').textContent=job.total_pendencias?`${numero(revisoes)} registros para revisão${diff!==0?' e uma pendência de quantidade':''}. Abra cada item para conferir a explicação e a origem. As dúvidas permanecem sinalizadas também no Excel e no PDF.`:'Nenhuma pendência de quantidade, leitura ou classificação identificada.';
+ $('review-caption').textContent=job.total_pendencias?`${numero(revisoes)} registros para revisão${diff!==0?' e uma pendência de quantidade':''}. Abra cada item para conferir a explicação e a origem. O STATUS_CURSO não localizado permanece visível também no Excel e nos PDFs.`:'Nenhuma pendência de quantidade, leitura ou classificação identificada.';
  $('review-rows').replaceChildren();
  for(const row of pendencias){const item=document.createElement('details');item.className='review-item';const summary=document.createElement('summary');const name=texto('span',row.Aluno||'Conferência do relatório','review-name');name.appendChild(texto('small',row.Identificador?`Identificador: ${row.Identificador}`:'Relatório'));summary.append(name,texto('span',row.Curso||'—'),texto('span',row['Problema encontrado']||row['Motivo compreensível'],'review-reason'));item.appendChild(summary);const detail=document.createElement('div');detail.className='review-detail';detail.append(texto('p',row['Motivo compreensível']),texto('p',`Origem: ${row['Localização/origem']||'Resumo do relatório'}`));const technical=Object.entries(row).filter(([key,value])=>value&&!['Aluno','Identificador','Curso','Problema encontrado','Motivo compreensível','Localização/origem'].includes(key));if(technical.length){const more=document.createElement('details');more.appendChild(texto('summary','Ver detalhes técnicos'));for(const [key,value]of technical)more.appendChild(texto('p',`${key}: ${value}`));detail.appendChild(more);}item.appendChild(detail);$('review-rows').appendChild(item);}
  $('detail').textContent=`${numero(c['Identificadores distintos'])} identificadores distintos · ${numero(job.alertas)} alertas de leitura · ${numero(job.revisoes_classificacao)} classificações para revisão. Quantidade faturada transcrita do documento: ${numero(m.quantidade_faturada)}.`;
@@ -52,7 +73,7 @@ function concluir(job){
 }
 async function acompanhar(id){
  while(true){const job=await json(`/api/trabalho/${encodeURIComponent(id)}`);if(job.estado==='concluido'){sessionStorage.removeItem('perseus-job');concluir(job);return;}if(job.estado==='erro'){sessionStorage.removeItem('perseus-job');throw new Error(job.detalhe||job.erro);}
- $('progress-title').textContent=job.etapa?.includes('Preparando')?'Preparando Excel e relatórios PDF':job.pagina?'Lendo e conferindo o relatório':'Recebendo seu documento';
+ $('progress-title').textContent=job.etapa?.includes('Preparando')?'Preparando Excel, referência e PDFs':job.pagina?'Lendo e conferindo o relatório':'Recebendo seu documento';
  $('progress-text').textContent=job.pagina?`Página ${numero(job.pagina)} de ${numero(job.paginas_pdf)} do documento · ${numero(job.registros)} registros encontrados`:'O processamento começará assim que o PDF for recebido.';
  await new Promise(resolve=>setTimeout(resolve,900));}
 }
