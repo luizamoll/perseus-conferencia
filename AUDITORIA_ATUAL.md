@@ -1,98 +1,193 @@
-# Perseus — auditoria do motor e das saídas
+# Perseus — auditoria atual
 
-Auditoria concluída em 07/09/2026. O escopo operacional permanece o primeiro bloco contíguo de coleta de cada PDF, sem somar os períodos históricos. A interface não foi redesenhada.
+Atualização concluída em 08/09/2026. O escopo operacional continua sendo o primeiro bloco contíguo de coleta de cada PDF, sem somar os períodos históricos do restante do documento.
 
-## Funcionando
+## Estado atual
 
-Fluxo real PDF → período → extração → classificação independente → conferência → revisões → XLSX/PDF/JSON/ZIP executado pelos endpoints locais com os dois PDFs. Setembro também foi processado pelo navegador, com verificação dos dois botões de download e ausência de erros de console.
+Fluxo validado:
 
-Os sete campos originais e toda a rastreabilidade dos 4.261 registros são iguais às saídas anteriores. A comparação integral com a planilha histórica confirmou nomes, cursos, datas, status, unidades e tipos; datas numéricas do histórico foram interpretadas como datas Excel, não como divergências. Os identificadores são texto, sem conversão numérica, inclusive 165 identificadores iniciados por zero em agosto e 167 em setembro.
+PDF Perseus → extração → conferência de quantidade → `STATUS_CURSO` pela legenda oficial → `COMPETENCIA` → consolidação da referência → XLSX + relatório PDF + lista completa em PDF + saídas técnicas.
 
-Uma segunda leitura do texto dos PDFs encontrou os mesmos identificadores que a extração tabular. Em 41 registros selecionados — primeiros/últimos, intervalos ao longo do documento, nomes longos, listas longas e classificações ambíguas — 287 campos foram comparados diretamente nas coordenadas das células usando PDFium, leitor independente do pdfplumber. Nenhuma diferença de conteúdo foi encontrada, descontando somente espaços e quebras de linha de apresentação.
+O motor de extração aprovado não foi alterado nesta rodada.
 
-## Bugs encontrados e corrigidos
+## Fonte oficial de classificação
 
-| Problema | Correção comprovada |
+A regra agora usa exclusivamente a aba `Legenda_Cursos_Status` da planilha **Fatura Perseus - SET 1.xlsx** como fonte empresarial para Curso → categoria.
+
+A legenda versionada foi comparada com a planilha fonte:
+
+- 58 siglas na planilha;
+- 58 siglas em `regras_status_curso.json`;
+- nenhuma sigla faltante;
+- nenhuma sigla extra;
+- nenhuma categoria divergente.
+
+O histórico mensal deixa de decidir a categoria. Ele pode ser usado apenas para comparação/diagnóstico.
+
+Regras operacionais:
+
+- todas as siglas do registro na mesma categoria → mantém essa categoria;
+- categorias diferentes → `MÚLTIPLAS CATEGORIAS`;
+- qualquer sigla ausente da legenda → `NÃO LOCALIZADO` e `REVISAR`;
+- `CIB` → `DI`;
+- `EVE` → `CURSO LIVRE`.
+
+## Cores de referência
+
+As cores efetivas foram extraídas da aba `Licenças Base`, considerando tema e tonalidade aplicados pelo Excel:
+
+| Referência | Cor |
 |---|---|
-| Resumo do Excel e relatório PDF não exibiam claramente a competência junto ao período de coleta e ao status geral. | Os dois rótulos são explícitos e vêm do mesmo resumo utilizado pela interface. |
-| Identificador aparecia depois de campos pouco úteis; as revisões começavam por página/linha e motivos técnicos. | Aluno e Identificador vêm primeiro; a revisão inclui problema, explicação administrativa e localização completa. Motivos técnicos permanecem no JSON. |
-| Revisões de leitura podiam perder a identificação do aluno e a tabela de origem. | Alertas novos preservam aluno, identificador, curso, período, página, tabela e linha quando disponíveis. |
-| Vários motivos de leitura podiam inflar a quantidade de casos. | Uma pendência por registro/local reúne todos os motivos. Registros para revisão, alertas sem registro associado e diferença de quantidade são contagens distintas. |
-| Diferença no total não aparecia como item explícito na aba Divergências. | Incluída uma pendência de conferência, sem inventar aluno ou identificador. Setembro tem 28 registros em revisão mais uma pendência de quantidade. |
-| Uma data válida seguida de texto inválido podia passar sem alerta sobre esse item. | Cada item do campo de datas é validado; valores originais continuam preservados. |
-| Competência/contrato/quantidade faturada divergentes em cabeçalhos das páginas lidas não eram comparados. | Cabeçalhos contraditórios interrompem a execução com mensagem explícita. |
-| Um primeiro bloco vazio podia permitir a retomada de um bloco posterior não contíguo. | A mudança de período encerra o bloco inicial mesmo se ele não tiver registros. |
-| Exportação aceitava um resumo incompatível com os registros. | Validação antes da saída confere competência, período, contagens e correspondência da auditoria de classificação. |
-| O caminho por linha de comando não produzia o mesmo conjunto principal de saídas/classificação. | O comando completo agora classifica depois de extrair e gera XLSX e PDF pelo exportador comum. A função de extração continua independente. |
-| Downloads de execuções diferentes tinham o mesmo nome. | Nome, metadados e tela identificam a execução; endpoints usam sua pasta exclusiva e mantêm Cache-Control: no-store. |
+| Fevereiro | `#C2F1C8` |
+| Março | `#FBE3D6` |
+| Abril | `#F9F9F9` |
+| Maio | `#C2F1C8` |
+| Junho | `#F2AA84` |
+| Julho | `#F9F9F9` |
+| Agosto | `#C04F15` |
+| Setembro | `#E59EDD` |
 
-Esses problemas foram reproduzidos em testes de regressão ou constatados no código/saídas. As correções de casos excepcionais não alteraram os registros, totais ou classificações dos dois PDFs reais. O mapa e o módulo de classificação permanecem inalterados.
+Esses valores estão versionados em `referencia.py` e cobertos por teste.
 
-## Resultado agosto
+## Resultado real — agosto
 
-- Documento: Agosto.pdf; 521 páginas; competência da fatura **2026/08**.
-- Coleta **07/2026**, de **26/06/2026 a 25/07/2026**.
-- Primeiro bloco: páginas **1–91**; a página 92 inicia outro período.
-- Informados **2.050**; extraídos **2.050**; diferença **0**; identificadores distintos **2.050**.
-- Sem alertas de estrutura **2.050**; classificados automaticamente **2.026**; registros para revisão **24**.
-- Status: **Totais conferem; revisão pendente**.
-- XLSX com três abas; PDF com três páginas.
+- Documento: fatura agosto/2026; 521 páginas.
+- Competência da fatura: **2026/08**.
+- Coleta: **07/2026**, de **26/06/2026 a 25/07/2026**.
+- Informados: **2.050**.
+- Extraídos: **2.050**.
+- Diferença: **0**.
+- Identificadores distintos: **2.050**.
+- Classificados automaticamente pela legenda oficial: **1.978**.
+- `NÃO LOCALIZADO` / revisão: **72**.
+- Consolidação: **2.050** registros no total.
 
-## Resultado setembro
+Distribuição:
 
-- Documento: Setembro.pdf; 537 páginas; competência da fatura **2026/09**.
-- Coleta **08/2026**, de **26/07/2026 a 25/08/2026**.
-- Primeiro bloco: páginas **1–97**; a página 98 inicia coleta 07/2026, ainda dentro da fatura 2026/09.
-- Informados **2.213**; extraídos **2.211**; diferença **−2**; identificadores distintos **2.211**.
-- Sem alertas de estrutura **2.211**; classificados automaticamente **2.183**; registros para revisão **28**.
-- Status: **Divergência de quantidade**.
-- XLSX com três abas e 29 pendências (28 registros + uma diferença de total); PDF com quatro páginas.
+| STATUS_CURSO | Quantidade |
+|---|---:|
+| GRADUAÇÃO | 804 |
+| MESTRADO | 324 |
+| DI | 633 |
+| MBA | 10 |
+| POS | 11 |
+| CURSO LIVRE | 0 |
+| APERFEIÇOAMENTO | 15 |
+| NÃO LOCALIZADO | 72 |
+| MÚLTIPLAS CATEGORIAS | 181 |
+| **Total** | **2.050** |
 
-A leitura textual de todas as 1.058 páginas confirmou uma única competência de fatura por arquivo. Os demais blocos históricos foram inventariados, mas não incorporados ao conjunto operacional. Não se declara homologação da extração tabular de todos os períodos históricos nem de layouts diferentes.
+## Resultado real — setembro
 
-## Divergências de dados/fontes, não bugs eliminados artificialmente
+- Documento: fatura setembro/2026; 537 páginas.
+- Competência da fatura: **2026/09**.
+- Coleta: **08/2026**, de **26/07/2026 a 25/08/2026**.
+- Informados: **2.213**.
+- Extraídos: **2.211**.
+- Diferença: **−2**, preservada sem criação de registros.
+- Identificadores distintos: **2.211**.
+- Classificados automaticamente pela legenda oficial: **2.133**.
+- `NÃO LOCALIZADO` / revisão: **78**.
+- Consolidação: **2.211** registros no total.
 
-O primeiro bloco de setembro possui 2.211 identificadores no texto independente, na extração tabular e na planilha histórica, frente a 2.213 no resumo do próprio PDF. A causa empresarial dessa diferença não está demonstrada; não foram identificados dois registros específicos que devessem ser acrescentados.
+Distribuição:
 
-| Pendência de classificação | Agosto | Setembro |
-|---|---:|---:|
-| CIB: legenda e script/histórico discordam | 18 | 20 |
-| LPI: sem categoria sustentada | 2 | 2 |
-| SETRA e PCG: sem categoria sustentada | 0 | 2 |
-| Código 15 dentro de uma lista de cursos | 1 | 1 |
-| ESGSC/PSO, DIREM/MBAAD e DA/DIR: combinações conflitantes | 3 | 3 |
-| Total de registros para revisão | 24 | 28 |
+| STATUS_CURSO | Quantidade |
+|---|---:|
+| GRADUAÇÃO | 860 |
+| MESTRADO | 325 |
+| DI | 728 |
+| MBA | 10 |
+| POS | 11 |
+| CURSO LIVRE | 0 |
+| APERFEIÇOAMENTO | 15 |
+| NÃO LOCALIZADO | 78 |
+| MÚLTIPLAS CATEGORIAS | 184 |
+| **Total** | **2.211** |
 
-O mapa foi reconstruído a partir de `coletafatura.py` e `Fatura Perseus - SET.xlsx` e coincidiu integralmente com o mapa versionado. A comparação histórica é retrospectiva, não homologação empresarial. Não se removeu curso repetido, não se fundiram pessoas e não se criaram linhas por curso.
+A diferença de dois registros de setembro continua sendo uma divergência do próprio relatório: 2.213 informados contra 2.211 identificadores/linhas encontrados. Nenhum aluno foi inventado para fechar o total.
 
-## Questões ainda sem evidência suficiente
+## Siglas ausentes da legenda oficial
 
-Precedência das fontes de CIB; significado/categoria de LPI, SETRA, PCG e 15; tratamento das três combinações conflitantes; regra empresarial geral para uma pessoa com mais de um curso/categoria; aprovação formal dos dez mapeamentos sustentados apenas por histórico; origem da diferença de dois registros em setembro. Essas questões permanecem explícitas, sem impedir as verificações objetivas.
+Estas siglas explicam os novos casos de `NÃO LOCALIZADO`.
 
-## Testes executados
+### Agosto
 
-- 44 testes rápidos descobertos: 43 aprovados e um teste real antigo condicionado a variáveis de ambiente ignorado nessa chamada. Os dois PDFs foram testados separadamente no fluxo real, sem amostragem da extração do primeiro bloco.
-- Fluxo HTTP real dos dois PDFs: processamento, JSON de estado, downloads, nomes de execução, MIME, attachment, no-store e conteúdo do ZIP.
-- Comparação integral dos registros/conferência/classificação com a base anterior e dos sete campos com a planilha histórica.
-- 41 registros/287 campos conferidos nas coordenadas originais por leitor independente; todos os identificadores dos blocos comparados com o texto independente.
-- Reabertura dos XLSX com openpyxl; comparação célula a célula dos campos operacionais, datas e identificadores; filtros, congelamento, ausência de mesclagem e altura máxima de 70 pontos.
-- Reabertura e leitura dos relatórios; presença de todas as pendências, motivos e identificadores.
-- Inspeção visual de todas as páginas dos dois relatórios e das três abas, incluindo as listas mais longas. A inspeção das abas usou cópias temporárias com áreas de impressão delimitadas, abertas pelo LibreOffice, para avaliar os campos em escala legível. Essas cópias não são os arquivos finais.
-- Navegador: setembro processado novamente, competência/totais verificados, Excel e PDF baixados; nenhum erro de console.
-- Sintaxe JavaScript verificada. Validador reproduzível disponibilizado no projeto.
+- `TEOC`: 48 ocorrências
+- `EFB`: 6
+- `GECOO`: 3
+- `GEQUA`: 3
+- `LPI`: 2
+- `CBIOL`: 2
+- `ARTVI`: 2
+- `LEPOL`: 2
+- `EFL`: 1
+- `GESSP`: 1
+- `15`: 1
+- `QUIM`: 1
 
-Não havia Microsoft Excel instalado para homologação nativa nessa aplicação. A validação foi feita com openpyxl, LibreOffice e leitores de PDF. Essa limitação não foi tratada como aprovação no Excel.
+### Setembro
 
-## Arquivos finais
+- `TEOC`: 49 ocorrências
+- `EFB`: 9
+- `GEQUA`: 3
+- `GECOO`: 2
+- `LPI`: 2
+- `CBIOL`: 2
+- `GESSP`: 2
+- `ARTVI`: 2
+- `LEPOL`: 2
+- `SETRA`: 1
+- `EFL`: 1
+- `15`: 1
+- `QUIM`: 1
+- `PCG`: 1
 
-`agosto/` e `setembro/` contêm o XLSX, o relatório PDF e o JSON da respectiva execução validada. `validacao.json` registra contagens, hashes e nomes exatos. O código atual está em `../perseus_mvp/`; o pacote auditado contém esse projeto e seus testes. As saídas anteriores permanecem como histórico e não devem ser confundidas com esta pasta de auditoria.
+Essas siglas não foram classificadas pelo histórico. Permanecem visíveis para decisão empresarial sobre inclusão ou não na legenda oficial.
 
-## Retomada e encerramento
+## Saídas validadas
 
-A suíte completa foi executada novamente com os dois PDFs reais habilitados: **44 testes aprovados, nenhum ignorado**. O validador reproduzível reabriu os XLSX e PDFs de agosto/setembro e voltou a comparar os identificadores com o texto dos PDFs reais: aprovado.
+O XLSX agora contém quatro abas:
 
-Agosto permanece 2.050/2.050, diferença 0, 24 registros em revisão. Setembro permanece 2.213/2.211, diferença -2, 28 registros em revisão mais uma pendência de quantidade. Identificadores textuais e zeros iniciais preservados. Classificação, mapa e CSS permanecem idênticos ao estado anterior à auditoria. Nesta retomada não foi necessária alteração de código.
+1. `Resumo`
+2. `Referência`
+3. `Alunos`
+4. `Divergências`
 
-Não há falha técnica bloqueante conhecida nos dois documentos e no fluxo homologado do primeiro bloco. O sistema está apto a seguir para a etapa exclusiva de interface/UX nesse escopo. As decisões empresariais pendentes e a diferença de setembro continuam para revisão; a abertura no Microsoft Excel instalado e outros layouts/ambientes não foram homologados.
+A aba `Referência` soma exatamente o total extraído e usa a cor correta da competência.
 
-O pacote Perseus_MVP_Auditado.zip inclui o projeto, os testes, as saídas reais e este diagnóstico. Use o iniciar.command da pasta perseus_mvp contida nesse pacote, após encerrar uma instância antiga.
+Nos arquivos finais reabertos:
+
+- Agosto: `Referência Agosto`, total 2.050, cor `#C04F15`.
+- Setembro: `Referência Setembro`, total 2.211, cor `#E59EDD`.
+
+O relatório PDF executivo contém a consolidação da referência. O PDF de lista completa contém `STATUS_CURSO` e `COMPETENCIA`.
+
+## Testes
+
+GitHub Actions na branch `feat/nova-interface`:
+
+- instalação das dependências em Python 3.12: aprovada;
+- suíte Python: aprovada;
+- teste real condicionado a variáveis de ambiente: ignorado no CI por não versionarmos PDFs com dados;
+- testes JavaScript da interface: aprovados;
+- empacotamento da versão validada: aprovado.
+
+Os PDFs reais foram processados separadamente, sem colocá-los no repositório. A leitura independente confirmou novamente 2.050 identificadores em agosto e 2.211 em setembro.
+
+## Segurança e preservação
+
+- PDFs reais, planilhas de dados e resultados continuam fora do Git.
+- Identificadores permanecem texto, inclusive zeros à esquerda.
+- O sistema continua local (`127.0.0.1`).
+- Nenhum cálculo de faturamento/licença foi acrescentado.
+- A planilha histórica original não é alterada.
+
+## Pendências antes de merge
+
+1. Inspeção visual final da interface no navegador local.
+2. Decisão empresarial sobre as siglas ausentes da legenda oficial, principalmente `TEOC` e `EFB`.
+3. A diferença de −2 em setembro permanece registrada e não deve ser compensada artificialmente.
+4. Outros layouts de PDF e PDFs digitalizados continuam fora do escopo homologado.
+
+A branch está tecnicamente consistente para teste local; o PR permanece em rascunho até a inspeção visual e a confirmação das siglas não mapeadas.
