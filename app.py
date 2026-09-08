@@ -18,6 +18,7 @@ from classificacao import classificar_resultado
 from exportacao import nome_excel, nome_pdf
 from pdf_alunos import nome_pdf_alunos, salvar_pdf_alunos
 from apresentacao import divergencias, resumo_resultado
+from biblioteca import registrar_nao_localizados
 
 BASE = Path(__file__).resolve().parent
 TOKEN = secrets.token_urlsafe(32)
@@ -35,6 +36,11 @@ def processar(job, arquivo, pasta):
         resultado["metadados"]["arquivo"] = job["arquivo"]
         resultado["metadados"].update(execucao=job.get("id") or uuid.uuid4().hex, processado_em=datetime.now(timezone.utc).isoformat(timespec="seconds"))
         resultado["classificacao"] = classificar_resultado(resultado)
+        biblioteca_resumo = resultado["classificacao"].get("biblioteca", {})
+        registrar_nao_localizados(
+            biblioteca_resumo,
+            resultado["classificacao"].get("competencia_operacional", resultado["metadados"].get("competencia_fatura", "")),
+        )
         resumo = resumo_resultado(resultado)
         pendencias = divergencias(resultado)
         revisoes_classificacao = sum(a["status_final"] == "REVISAR" for a in resultado["classificacao"]["auditoria"])
@@ -42,6 +48,9 @@ def processar(job, arquivo, pasta):
         with TRAVA:
             job.update(etapa="Preparando Excel e relatórios PDF", registros=len(resultado["registros"]))
         salvar(resultado, destino)
+        (destino / "biblioteca_divergencias.json").write_text(
+            json.dumps(biblioteca_resumo, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         pdf = nome_pdf(resultado)
         excel = nome_excel(resultado)
         pdf_alunos = nome_pdf_alunos(resultado)
@@ -68,6 +77,7 @@ def processar(job, arquivo, pasta):
                 referencia=classificacao.get("referencia", {}),
                 consolidacao=classificacao.get("consolidacao", []),
                 competencia_operacional=classificacao.get("competencia_operacional", ""),
+                biblioteca=classificacao.get("biblioteca", {}),
                 amostra=[{k:v for k,v in r.items() if k != "Células originais"} for r in resultado["registros"][:10]],
             )
     except Exception as exc:
@@ -119,7 +129,7 @@ class Pagina(BaseHTTPRequestHandler):
             id_job, nome = partes[1:]
             with TRAVA:
                 job = TRABALHOS.get(id_job)
-            permitidos = {"alunos.xlsx", "alunos.csv", "conferencia.csv", "revisao.csv", "resultado.json", "resultado.zip"}
+            permitidos = {"alunos.xlsx", "alunos.csv", "conferencia.csv", "revisao.csv", "resultado.json", "biblioteca_divergencias.json", "resultado.zip"}
             if job and job.get("excel"):
                 permitidos.add(job["excel"])
             if job and job.get("pdf"):
