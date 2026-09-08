@@ -26,11 +26,13 @@ A própria planilha mestre usa classificações que nem sempre coincidem com a l
 
 Exemplo central: a legenda traz `CIB → DI`, porém os quadros históricos de agosto e setembro classificam operacionalmente CIB como **Graduação**. Como o significado empresarial de DI foi esclarecido, CIB não é tratado como verdade empresarial: permanece uma exceção histórica até a regra específica de CIB ser confirmada.
 
+A compatibilidade histórica está autorizada somente para `Fatura_Final_Ref_Agosto_2026` e `Fatura_Final_Ref_Setembro`. Uma competência futura **não herda automaticamente** CIB → Graduação nem as combinações históricas. Nela, o sistema volta à regra confirmada/legenda até existir nova confirmação empresarial.
+
 ## Precedência
 
 1. regra de negócio confirmada;
 2. legenda oficial;
-3. compatibilidade histórica necessária para reproduzir referências antigas;
+3. compatibilidade histórica somente nas competências explicitamente autorizadas;
 4. sem base segura → pendência explícita.
 
 Combinações históricas exatas continuam registradas separadamente para explicar como os quadros antigos foram obtidos, mas não devem ser confundidas com regra empresarial confirmada.
@@ -48,7 +50,7 @@ Combinações históricas exatas continuam registradas separadamente para explic
 ## Pendências reais conhecidas
 
 - `SETRA` → significado e categoria ainda não confirmados.
-- `15` → valor encontrado no campo Curso; precisa ser investigado porque pode ser código indevido ou dado deslocado.
+- `15` → foi confirmado que o valor está realmente na coluna **Curso** da fonte. Seu significado e sua categoria continuam desconhecidos e devem ser confirmados com a pessoa responsável pela lista. O Perseus não presume que seja erro nem curso válido.
 
 `LPI` e `PCG` não são mais pendências: agora possuem regra de negócio confirmada.
 
@@ -110,7 +112,7 @@ A planilha histórica de setembro fecha em:
 - 189 MÚLTIPLAS CATEGORIAS
 - total **2.211**
 
-Depois dos novos esclarecimentos empresariais, `LPI` passa de NÃO LOCALIZADO para GRADUAÇÃO (2 alunos) e `PCG` passa de NÃO LOCALIZADO para POS (1 aluno). Portanto, mantendo todas as demais compatibilidades históricas apenas para comparação, a classificação atual esperada de setembro passa a:
+Depois dos novos esclarecimentos empresariais, `LPI` passa de NÃO LOCALIZADO para GRADUAÇÃO (2 alunos) e `PCG` passa de NÃO LOCALIZADO para POS (1 aluno). Portanto, mantendo as compatibilidades históricas apenas para explicar/reproduzir setembro, a classificação atual esperada passa a:
 
 - **947 GRADUAÇÃO**
 - 325 MESTRADO
@@ -123,6 +125,6 @@ Depois dos novos esclarecimentos empresariais, `LPI` passa de NÃO LOCALIZADO pa
 - 189 MÚLTIPLAS CATEGORIAS
 - total **2.211**
 
-O valor `15` continua sendo uma pendência de qualidade de dado, mas no registro em que aparece junto de `CEXT, CSAP, GN` as siglas conhecidas sustentam DI, então ele não aumenta o total de NÃO LOCALIZADO.
+O valor `15` continua sendo uma pendência de significado. No registro em que aparece junto de `CEXT, CSAP, GN`, as siglas já conhecidas sustentam DI, então ele não aumenta o total de NÃO LOCALIZADO; ainda assim, permanece marcado para revisão até a confirmação da fonte.
 
 Esses totais de classificação não alteram a conferência do PDF. Setembro continua com 2.213 informados e 2.211 extraídos.
