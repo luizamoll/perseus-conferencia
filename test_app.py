@@ -19,7 +19,9 @@ class ApplicationTests(unittest.TestCase):
             with zipfile.ZipFile(Path(d)/'resultado.zip') as z:
                 self.assertIn(job['excel'],z.namelist())
                 self.assertIn(job['pdf'],z.namelist())
+                self.assertIn(job['pdf_alunos'],z.namelist())
                 self.assertTrue(z.read(job['pdf']).startswith(b'%PDF-'))
+                self.assertTrue(z.read(job['pdf_alunos']).startswith(b'%PDF-'))
                 self.assertIn('resultado.json',z.namelist())
             self.assertEqual(job['metadados']['arquivo'],'origem.pdf')
     def test_todas_pendencias_disponiveis_para_interface(self):
@@ -51,12 +53,13 @@ class ApplicationTests(unittest.TestCase):
             dest=Path(d)/'test'/'resultado';dest.mkdir(parents=True)
             (dest/'alunos.xlsx').write_bytes(b'test-xlsx')
             (dest/'relatorio.pdf').write_bytes(b'%PDF-test')
+            (dest/'lista-alunos.pdf').write_bytes(b'%PDF-alunos')
             handler=object.__new__(app.Pagina)
             handler.headers={'Host':'127.0.0.1:8876'}
             handler.server=SimpleNamespace(server_port=8876,destino=Path(d))
             responses=[]
             handler.responder=lambda *args:responses.append(args)
-            with patch.dict(app.TRABALHOS,{'test':{'estado':'concluido','pdf':'relatorio.pdf'}}):
+            with patch.dict(app.TRABALHOS,{'test':{'estado':'concluido','pdf':'relatorio.pdf','pdf_alunos':'lista-alunos.pdf'}}):
                 handler.path='/download/test/alunos.xlsx';handler.do_GET()
                 self.assertEqual(responses[-1][0],200)
                 self.assertIn('spreadsheetml',responses[-1][2])
@@ -64,6 +67,10 @@ class ApplicationTests(unittest.TestCase):
                 self.assertEqual(responses[-1][0],200)
                 self.assertEqual(responses[-1][2],'application/pdf')
                 self.assertEqual(responses[-1][3],'relatorio.pdf')
+                handler.path='/download/test/lista-alunos.pdf';handler.do_GET()
+                self.assertEqual(responses[-1][0],200)
+                self.assertEqual(responses[-1][2],'application/pdf')
+                self.assertEqual(responses[-1][3],'lista-alunos.pdf')
                 handler.path='/download/test/entrada.pdf';handler.do_GET()
                 self.assertEqual(responses[-1][0],404)
 
