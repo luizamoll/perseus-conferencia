@@ -1,0 +1,27 @@
+{
+  "versao": "referencias_agosto_setembro_2026",
+  "fonte": "Fatura Perseus - SET 1.xlsx / Fatura_Final_Ref_Agosto_2026 e Fatura_Final_Ref_Setembro",
+  "descricao": "Camada operacional de compatibilidade para reproduzir os quadros de Referência validados sem apagar a legenda oficial.",
+  "mapeamentos_siglas": {
+    "CIB": "GRADUAÇÃO",
+    "TEOC": "GRADUAÇÃO",
+    "EFB": "GRADUAÇÃO",
+    "GECOO": "GRADUAÇÃO",
+    "GEQUA": "POS",
+    "EFL": "GRADUAÇÃO",
+    "CBIOL": "GRADUAÇÃO",
+    "GESSP": "GRADUAÇÃO",
+    "ARTVI": "GRADUAÇÃO",
+    "LEPOL": "GRADUAÇÃO",
+    "QUIM": "GRADUAÇÃO"
+  },
+  "combinacoes_exatas": {
+    "ESGSC|PSO": "GRADUAÇÃO",
+    "DIREM|MBAAD": "GRADUAÇÃO",
+    "DA|DIR": "GRADUAÇÃO"
+  },
+  "observacoes": {
+    "CIB": "A legenda oficial informa DI, porém os quadros operacionais de agosto e setembro classificam CIB como Graduação. A exceção fica isolada nesta biblioteca e não altera a legenda oficial.",
+    "nao_localizados": "Siglas sem mapeamento em nenhuma das duas fontes permanecem registradas para revisão. Se um registro contém ao menos uma sigla conhecida, a categoria pode ser determinada pelas siglas conhecidas, mas a sigla ausente continua na biblioteca de pendências."
+  }
+}
