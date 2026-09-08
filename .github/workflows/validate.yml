@@ -29,3 +29,15 @@ jobs:
 
       - name: Testes da interface
         run: node --test test_interface.cjs
+
+      - name: Empacotar código validado
+        if: success()
+        run: zip -r perseus-validado.zip . -x '.git/*' 'perseus-validado.zip'
+
+      - name: Salvar artefato para validação real
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perseus-validado
+          path: perseus-validado.zip
+          retention-days: 1
