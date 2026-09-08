@@ -43,12 +43,13 @@ class AuditoriaTests(unittest.TestCase):
         self.assertIn('Tabela 1',d['Localização/origem']);self.assertTrue(d['Aluno'])
 
     def test_review_counts_unique_records_not_reasons(self):
-        row=list(ROW);row[1]='LPI';row[3]='';row[4]=''
+        row=list(ROW);row[1]='SETRA';row[3]='';row[4]=''
         r=self.resultado([row]);summary=resumo_resultado(r)[0]
         self.assertEqual(summary['Registros para revisão'],1)
         self.assertGreater(len(r['revisao']),1)
         self.assertEqual(len([d for d in divergencias(r) if d['_registro']]),1)
-        self.assertIn('biblioteca operacional',divergencias(r)[1]['Motivo compreensível'])
+        texto=' '.join(d['Motivo compreensível'] for d in divergencias(r))
+        self.assertIn('não localizado',texto.lower())
 
     def test_total_difference_is_not_an_invented_student(self):
         r=self.resultado();ds=divergencias(r)
@@ -115,17 +116,20 @@ class AuditoriaTests(unittest.TestCase):
         h.responder(200,b'%PDF-test','application/pdf','resultado.pdf')
         self.assertEqual(headers['Cache-Control'],'no-store');self.assertIn('attachment;',headers['Content-Disposition'])
 
-    def test_biblioteca_operacional_reproduz_excecoes_da_referencia(self):
+    def test_biblioteca_operacional_separa_confirmado_de_historico(self):
         from classificacao import classificar_registro
-        esperados={
-            'CIB':'GRADUAÇÃO','TEOC':'GRADUAÇÃO','GEQUA':'POS',
-            'ESGSC, PSO':'GRADUAÇÃO','DIREM, MBAAD':'GRADUAÇÃO','DA, DIR':'GRADUAÇÃO'
-        }
-        for course,categoria in esperados.items():
+        confirmados={'TEOC':'GRADUAÇÃO','LPI':'GRADUAÇÃO','EFB':'GRADUAÇÃO','PCG':'POS'}
+        for course,categoria in confirmados.items():
             a=classificar_registro({'Curso':course});self.assertEqual(a['categoria_final'],categoria);self.assertEqual(a['status_final'],'CLASSIFICADO')
-        for course in ['LPI','PCG','SETRA']:
-            a=classificar_registro({'Curso':course});self.assertEqual(a['categoria_final'],'NÃO LOCALIZADO');self.assertEqual(a['status_final'],'REVISAR')
-            self.assertTrue(all(motivo_humano(m) for m in a['motivos_revisao']))
+        historicos={
+            'CIB':'GRADUAÇÃO','GEQUA':'POS','ESGSC, PSO':'GRADUAÇÃO',
+            'DIREM, MBAAD':'GRADUAÇÃO','DA, DIR':'GRADUAÇÃO'
+        }
+        for course,categoria in historicos.items():
+            a=classificar_registro({'Curso':course},permitir_historico=True);self.assertEqual(a['categoria_final'],categoria);self.assertEqual(a['status_final'],'CLASSIFICADO')
+        self.assertEqual(classificar_registro({'Curso':'CIB'})['categoria_final'],'DI')
+        a=classificar_registro({'Curso':'SETRA'});self.assertEqual(a['categoria_final'],'NÃO LOCALIZADO');self.assertEqual(a['status_final'],'REVISAR')
+        self.assertTrue(all(motivo_humano(m) for m in a['motivos_revisao']))
         a=classificar_registro({'Curso':'15, CEXT, CSAP, GN'})
         self.assertEqual(a['categoria_final'],'DI');self.assertEqual(a['status_final'],'REVISAR')
 
