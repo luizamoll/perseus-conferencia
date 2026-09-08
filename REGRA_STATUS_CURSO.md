@@ -1,88 +1,94 @@
-# Regra oficial — STATUS_CURSO e Referência
+# Regra — STATUS_CURSO, biblioteca e Referência
 
-Este documento é a fonte de contexto da etapa de classificação/consolidação do Perseus. Ele não altera as regras de extração do PDF.
+Este documento registra a regra empresarial usada pelo Perseus sem alterar o motor de extração do PDF.
 
-## Fonte de negócio
+## Duas fontes, sem misturar evidência
 
-A fonte oficial para classificar cursos é a aba `Legenda_Cursos_Status` da planilha **Fatura Perseus - SET 1.xlsx** fornecida para o processo.
+### 1. Legenda oficial
 
-O histórico das abas mensais pode ser comparado para diagnóstico, mas **não pode sobrescrever a legenda oficial**. Isso evita que classificações manuais antigas incorretas sejam transformadas em regra.
+`regras_status_curso.json` é a transcrição da aba `Legenda_Cursos_Status` de **Fatura Perseus - SET 1.xlsx**.
 
-## Saída operacional
+### 2. Biblioteca operacional
 
-Cada registro extraído recebe:
+`biblioteca/mapeamentos_operacionais.json` guarda exceções observadas e confirmadas pelos quadros mensais da própria planilha mestre. Ela existe porque a legenda e o processo operacional não são idênticos em todos os casos.
 
-- `STATUS_CURSO`
-- `COMPETENCIA`
+Exemplo central: a legenda traz `CIB → DI`, porém agosto e setembro classificam operacionalmente CIB como **Graduação**. O sistema preserva as duas informações e usa a biblioteca para reproduzir a Referência operacional.
 
-Categorias usadas na consolidação:
+## Precedência
 
-1. GRADUAÇÃO
-2. MESTRADO
-3. DI
-4. MBA
-5. POS
-6. CURSO LIVRE
-7. APERFEIÇOAMENTO
-8. NÃO LOCALIZADO
-9. MÚLTIPLAS CATEGORIAS
+1. combinação exata registrada na biblioteca;
+2. mapeamento de sigla registrado na biblioteca;
+3. legenda oficial;
+4. sigla ausente nas duas fontes → pendência.
 
-## Como classificar
+A biblioteca não modifica `regras_status_curso.json`.
 
-1. Separe o campo `Curso` somente por vírgula, preservando o conteúdo original do registro.
-2. Consulte cada sigla na legenda oficial.
-3. Se todas as siglas encontradas pertencem à mesma categoria, o registro recebe essa categoria, mesmo que a sigla se repita.
-4. Se as siglas encontradas pertencem a categorias diferentes, o registro recebe `MÚLTIPLAS CATEGORIAS`.
-5. Se qualquer sigla não existir na legenda oficial, o registro recebe `NÃO LOCALIZADO` e permanece como `REVISAR`.
-6. O sistema nunca cria, remove ou duplica alunos para fechar totais.
+## Regras de um registro
 
-Exemplos importantes:
+- O campo `Curso` é separado somente por vírgula.
+- Repetições são preservadas.
+- Se todas as categorias conhecidas forem iguais, o aluno recebe essa categoria.
+- Se houver categorias conhecidas diferentes, recebe `MÚLTIPLAS CATEGORIAS`.
+- Se uma sigla desconhecida aparecer junto com siglas conhecidas, a categoria conhecida é preservada, mas o registro fica `REVISAR` e a sigla desconhecida entra na biblioteca local.
+- Se nenhuma sigla tiver categoria conhecida, recebe `NÃO LOCALIZADO` e `REVISAR`.
+- Nenhum aluno é criado, removido ou duplicado para fechar totais.
 
-- `CIB` → `DI`
-- `CEXT, CIB` → `DI`
-- `ESGSC, PSO` → `POS`
-- `DIREM, MBAAD` → `MÚLTIPLAS CATEGORIAS`
-- `DA, DIR` → `MÚLTIPLAS CATEGORIAS`
-- `EVE` → `CURSO LIVRE`
-- `LPI` (enquanto não estiver na legenda) → `NÃO LOCALIZADO` + revisão
+## Exceções operacionais que reproduzem agosto/setembro
+
+Siglas:
+
+- CIB → GRADUAÇÃO
+- TEOC → GRADUAÇÃO
+- EFB → GRADUAÇÃO
+- GECOO → GRADUAÇÃO
+- GEQUA → POS
+- EFL → GRADUAÇÃO
+- CBIOL → GRADUAÇÃO
+- GESSP → GRADUAÇÃO
+- ARTVI → GRADUAÇÃO
+- LEPOL → GRADUAÇÃO
+- QUIM → GRADUAÇÃO
+
+Combinações exatas:
+
+- ESGSC + PSO → GRADUAÇÃO
+- DIREM + MBAAD → GRADUAÇÃO
+- DA + DIR → GRADUAÇÃO
+
+Exemplos:
+
+- `CIB` → GRADUAÇÃO pela biblioteca, mantendo DI como `categoria_legenda` na auditoria.
+- `CEXT, CIB` → MÚLTIPLAS CATEGORIAS.
+- `ESGSC, PSO` → GRADUAÇÃO pela exceção de combinação.
+- `15, CEXT, CSAP, GN` → DI + REVISAR; `15` entra na biblioteca de pendências.
+- `LPI` → NÃO LOCALIZADO + REVISAR.
+
+## Biblioteca persistente
+
+`biblioteca/nao_localizados.json` é criado durante o uso e não vai para o Git. Ele armazena somente sigla, quantidade acumulada, primeira/última competência e data de atualização. Não armazena nome nem identificador de aluno.
+
+Cada execução exporta também `biblioteca_divergencias.json` para permitir auditoria daquele processamento.
 
 ## COMPETENCIA
 
-O campo segue a nomenclatura operacional observada na planilha. Para 2026:
-
-- Fevereiro → `Fatura_Final_Ref_Fevereiro_2026`
-- Março → `Fatura_Final_Ref_Março_2026`
-- Abril → `Fatura_Final_Ref_Abril_2026`
-- Maio → `Fatura_Final_Ref_Maio_2026`
-- Junho → `Fatura_Final_Ref_Junho_2026`
-- Julho → `Fatura_Final_Ref_Julho_2026`
-- Agosto → `Fatura_Final_Ref_Agosto_2026`
-- Setembro → `Fatura_Final_Ref_Setembro`
-
-Para competências futuras ainda não observadas na fonte, o fallback é `Fatura_Final_Ref_<Mês>_<Ano>`.
+Para 2026, a nomenclatura observada segue `Fatura_Final_Ref_<Mês>_2026`, com setembro registrado na fonte como `Fatura_Final_Ref_Setembro`. Meses futuros usam o padrão com mês e ano enquanto não houver outra fonte.
 
 ## Cores de Referência
 
-As cores abaixo são as cores efetivas dos cabeçalhos/totais da aba `Licenças Base`, já considerando tema e tonalidade aplicados pelo Excel:
+- Fevereiro `#C2F1C8`
+- Março `#FBE3D6`
+- Abril `#F9F9F9`
+- Maio `#C2F1C8`
+- Junho `#F2AA84`
+- Julho `#F9F9F9`
+- Agosto `#C04F15`
+- Setembro `#E59EDD`
 
-- Fevereiro: `#C2F1C8`
-- Março: `#FBE3D6`
-- Abril: `#F9F9F9`
-- Maio: `#C2F1C8`
-- Junho: `#F2AA84`
-- Julho: `#F9F9F9`
-- Agosto: `#C04F15`
-- Setembro: `#E59EDD`
+## Totais de controle
 
-Meses sem cor observada usam um neutro institucional até que uma fonte oficial seja fornecida.
+A consolidação validada reproduz a planilha:
 
-## Consolidação
+- Agosto: 883 GRADUAÇÃO, 324 MESTRADO, 617 DI, 10 MBA, 13 POS, 0 CURSO LIVRE, 15 APERFEIÇOAMENTO, 2 NÃO LOCALIZADO, 186 MÚLTIPLAS CATEGORIAS = **2.050**.
+- Setembro: 945 GRADUAÇÃO, 325 MESTRADO, 710 DI, 10 MBA, 13 POS, 0 CURSO LIVRE, 15 APERFEIÇOAMENTO, 4 NÃO LOCALIZADO, 189 MÚLTIPLAS CATEGORIAS = **2.211**.
 
-A consolidação conta **um registro por aluno/linha extraída**, usando o `STATUS_CURSO` final daquele registro. A soma das nove categorias precisa ser igual ao total de registros extraídos. A consolidação não altera a conferência de quantidade do PDF.
-
-## Limites
-
-- Não calcula faturamento ou quantidade de licenças.
-- Não corrige automaticamente a planilha mestre histórica.
-- Não usa o histórico manual como regra oficial.
-- Não altera o motor de leitura do PDF aprovado.
+Esses totais de classificação não alteram a conferência do PDF. Setembro continua com 2.213 informados e 2.211 extraídos.
