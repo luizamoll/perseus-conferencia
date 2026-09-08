@@ -6,231 +6,104 @@
 <title>Perseus · Conferência de coleta</title>
 <meta name="description" content="Confira seu relatório Perseus e receba Excel e PDF. Processamento local.">
 <link rel="stylesheet" href="/style.css">
-<script src="/app.js" defer>
-</script>
+<script src="/app.js" defer></script>
 </head>
 <body data-state="idle">
 <header>
-<a class="brand" href="/" aria-label="Perseus, início">
-<span class="brand-mark" aria-hidden="true">P<span>·</span>
-</span>perseus<span class="brand-caption">Conferência de coleta</span>
-</a>
-<span class="local">
-<i>
-</i> No seu computador</span>
+<a class="brand" href="/" aria-label="Perseus, início"><span class="brand-mark" aria-hidden="true">P<span>·</span></span>perseus<span class="brand-caption">Conferência de coleta</span></a>
+<span class="local"><i></i> No seu computador</span>
 </header>
 <main>
 <div class="intro">
 <p class="eyebrow">DO RELATÓRIO À CONFERÊNCIA</p>
 <h1>Vamos conferir a coleta?</h1>
-<p>Traga o PDF do Perseus. Confira os totais, revise as pendências e leve os resultados em Excel e PDF.</p>
+<p>Traga o PDF do Perseus. Confira os totais, veja a referência por STATUS_CURSO, revise as pendências e leve os resultados em Excel e PDF.</p>
 </div>
 <ol class="steps" aria-label="Etapas da conferência">
-<li id="step1" class="active" aria-current="step">
-<span>01</span>Seu documento</li>
-<li id="step2">
-<span>02</span>Leitura</li>
-<li id="step3">
-<span>03</span>Conferência</li>
-<li id="step4">
-<span>04</span>Seus arquivos</li>
+<li id="step1" class="active" aria-current="step"><span>01</span>Seu documento</li>
+<li id="step2"><span>02</span>Leitura</li>
+<li id="step3"><span>03</span>Conferência</li>
+<li id="step4"><span>04</span>Seus arquivos</li>
 </ol>
 <section id="error" class="error" role="alert" hidden>
-<strong id="error-title" tabindex="-1">Não foi possível continuar.</strong>
-<p id="error-message">
-</p>
-<details id="error-details">
-<summary>Ver detalhes técnicos</summary>
-<pre id="error-technical">
-</pre>
-</details>
+<strong id="error-title" tabindex="-1">Não foi possível continuar.</strong><p id="error-message"></p>
+<details id="error-details"><summary>Ver detalhes técnicos</summary><pre id="error-technical"></pre></details>
 </section>
 <section id="setup" class="workspace">
 <div class="upload-area">
 <div class="drop" id="drop">
-<svg class="paper" viewBox="0 0 120 140" aria-hidden="true">
-<g class="sheet">
-<path class="paper-body" d="M25 12h49l22 23v91H25z"/>
-<path class="fold" d="M74 12v23h22"/>
-<path class="lines" d="M39 48h39M39 55h27M39 99h40M39 106h30"/>
-<g class="eyes">
-<path d="M45 72v4m25-4v4"/>
-</g>
-<path class="smile" d="M51 83q8 7 16 0"/>
-<path class="curious" d="M54 86q6-3 11 0"/>
-<path class="worried" d="M52 88q7-8 14 0"/>
-<path class="scan" d="M35 52h51"/>
-</g>
-</svg>
+<svg class="paper" viewBox="0 0 120 140" aria-hidden="true"><g class="sheet"><path class="paper-body" d="M25 12h49l22 23v91H25z"/><path class="fold" d="M74 12v23h22"/><path class="lines" d="M39 48h39M39 55h27M39 99h40M39 106h30"/><g class="eyes"><path d="M45 72v4m25-4v4"/></g><path class="smile" d="M51 83q8 7 16 0"/><path class="curious" d="M54 86q6-3 11 0"/><path class="worried" d="M52 88q7-8 14 0"/><path class="scan" d="M35 52h51"/></g></svg>
 <p class="eyebrow">PODE DEIXAR COMIGO</p>
 <h2 id="filename">Seu relatório começa aqui.</h2>
 <p id="filehint">Arraste o PDF ou escolha um arquivo no seu computador.</p>
-<label class="choose" for="pdf">Selecionar PDF<input id="pdf" type="file" accept=".pdf,application/pdf" aria-label="Selecionar PDF">
-</label>
+<label class="choose" for="pdf">Selecionar PDF<input id="pdf" type="file" accept=".pdf,application/pdf" aria-label="Selecionar PDF"></label>
 <span class="limit">PDF · até 80 MB</span>
 </div>
-<div class="upload-action">
-<span>O documento original<br>permanece intacto.</span>
-<button id="processar" disabled>Processar relatório <span aria-hidden="true">→</span>
-</button>
-</div>
+<div class="upload-action"><span>O documento original<br>permanece intacto.</span><button id="processar" disabled>Processar relatório <span aria-hidden="true">→</span></button></div>
 </div>
 <aside class="explanation">
 <p class="eyebrow">MENOS CONFERÊNCIA MANUAL</p>
 <h2>Do PDF para<br>o que importa.</h2>
 <ol>
-<li>
-<strong>Totais que fazem sentido</strong>
-<p>Fatura e coleta identificadas, com as quantidades lado a lado.</p>
-</li>
-<li>
-<strong>Pendências à vista</strong>
-<p>Diferenças e dúvidas de classificação separadas para sua revisão.</p>
-</li>
-<li>
-<strong>Pronto para trabalhar</strong>
-<p>Excel editável e relatórios PDF organizados para consulta.</p>
-</li>
+<li><strong>Totais que fazem sentido</strong><p>Fatura e coleta identificadas, com as quantidades lado a lado.</p></li>
+<li><strong>Referência organizada</strong><p>STATUS_CURSO consolidado nas mesmas categorias usadas no processo mensal.</p></li>
+<li><strong>Pendências à vista</strong><p>O que não existe na legenda oficial fica separado para sua revisão.</p></li>
 </ol>
-<p class="compatibility">Use o relatório Perseus<br>
-<strong>“Alunos Coletados para Fatura”.</strong>
-<br>Conferimos o primeiro período de coleta.</p>
+<p class="compatibility">Use o relatório Perseus<br><strong>“Alunos Coletados para Fatura”.</strong><br>Conferimos o primeiro período de coleta.</p>
 </aside>
 </section>
-
 <section id="loading" class="loading" hidden>
-<svg class="paper" viewBox="0 0 120 140" aria-hidden="true">
-<g class="sheet">
-<path class="paper-body" d="M25 12h49l22 23v91H25z"/>
-<path class="fold" d="M74 12v23h22"/>
-<path class="lines" d="M39 48h39M39 55h27M39 99h40M39 106h30"/>
-<g class="eyes">
-<path d="M45 72v4m25-4v4"/>
-</g>
-<path class="smile" d="M51 83q8 7 16 0"/>
-<path class="curious" d="M54 86q6-3 11 0"/>
-<path class="worried" d="M52 88q7-8 14 0"/>
-<path class="scan" d="M35 52h51"/>
-</g>
-</svg>
+<svg class="paper" viewBox="0 0 120 140" aria-hidden="true"><g class="sheet"><path class="paper-body" d="M25 12h49l22 23v91H25z"/><path class="fold" d="M74 12v23h22"/><path class="lines" d="M39 48h39M39 55h27M39 99h40M39 106h30"/><g class="eyes"><path d="M45 72v4m25-4v4"/></g><path class="smile" d="M51 83q8 7 16 0"/><path class="curious" d="M54 86q6-3 11 0"/><path class="worried" d="M52 88q7-8 14 0"/><path class="scan" d="M35 52h51"/></g></svg>
 <p class="eyebrow">UM POUCO DE ATENÇÃO AOS DETALHES</p>
 <h2 id="progress-title" tabindex="-1">Recebendo seu documento</h2>
 <p id="progress-text" role="status" aria-live="polite">Preparando a leitura do PDF.</p>
-<progress aria-label="Processamento em andamento">
-</progress>
+<progress aria-label="Processamento em andamento"></progress>
 <p class="small">A conferência considera o primeiro período de coleta do relatório.<br>Você pode acompanhar a leitura nesta janela.</p>
 </section>
 <section id="result" hidden>
 <div class="result-heading">
-<div>
-<p class="eyebrow">SEU RELATÓRIO, CONFERIDO</p>
-<h2 id="result-title" tabindex="-1">Vamos aos resultados.</h2>
-<p id="result-file" class="file-reference">
-</p>
-</div>
-<button id="novo" class="secondary">Conferir outro PDF <span aria-hidden="true">↗</span>
-</button>
+<div><p class="eyebrow">SEU RELATÓRIO, CONFERIDO</p><h2 id="result-title" tabindex="-1">Vamos aos resultados.</h2><p id="result-file" class="file-reference"></p></div>
+<button id="novo" class="secondary">Conferir outro PDF <span aria-hidden="true">↗</span></button>
 </div>
 <div class="outcome-wrap">
-<svg class="paper" viewBox="0 0 120 140" aria-hidden="true">
-<g class="sheet">
-<path class="paper-body" d="M25 12h49l22 23v91H25z"/>
-<path class="fold" d="M74 12v23h22"/>
-<path class="lines" d="M39 48h39M39 55h27M39 99h40M39 106h30"/>
-<g class="eyes">
-<path d="M45 72v4m25-4v4"/>
-</g>
-<path class="smile" d="M51 83q8 7 16 0"/>
-<path class="curious" d="M54 86q6-3 11 0"/>
-<path class="worried" d="M52 88q7-8 14 0"/>
-<path class="scan" d="M35 52h51"/>
-</g>
-</svg>
-<div>
-<h3 id="outcome" role="status">
-</h3>
-<p id="outcome-description">
-</p>
-</div>
+<svg class="paper" viewBox="0 0 120 140" aria-hidden="true"><g class="sheet"><path class="paper-body" d="M25 12h49l22 23v91H25z"/><path class="fold" d="M74 12v23h22"/><path class="lines" d="M39 48h39M39 55h27M39 99h40M39 106h30"/><g class="eyes"><path d="M45 72v4m25-4v4"/></g><path class="smile" d="M51 83q8 7 16 0"/><path class="curious" d="M54 86q6-3 11 0"/><path class="worried" d="M52 88q7-8 14 0"/><path class="scan" d="M35 52h51"/></g></svg>
+<div><h3 id="outcome" role="status"></h3><p id="outcome-description"></p></div>
 </div>
 <div class="periods">
-<div>
-<span class="eyebrow">COMPETÊNCIA DA FATURA</span>
-<strong id="invoice">
-</strong>
-</div>
-<div>
-<span class="eyebrow">PERÍODO DE COLETA</span>
-<strong id="collection">
-</strong>
-<span id="interval">
-</span>
-</div>
+<div><span class="eyebrow">COMPETÊNCIA DA FATURA</span><strong id="invoice"></strong></div>
+<div><span class="eyebrow">PERÍODO DE COLETA</span><strong id="collection"></strong><span id="interval"></span></div>
 </div>
 <div class="metrics">
-<div>
-<span>Informados pelo Perseus</span>
-<strong id="informado">
-</strong>
+<div><span>Informados pelo Perseus</span><strong id="informado"></strong></div>
+<div><span>Encontrados no relatório</span><strong id="extraido"></strong></div>
+<div><span>Diferença de quantidade</span><strong id="diferenca"></strong></div>
+<div><span>Registros para revisão</span><strong id="revisoes"></strong></div>
 </div>
-<div>
-<span>Encontrados no relatório</span>
-<strong id="extraido">
-</strong>
+<section id="reference-summary" class="reference-summary" aria-labelledby="reference-title">
+<div class="reference-heading">
+<div><p class="eyebrow">STATUS_CURSO · CONSOLIDAÇÃO</p><h3 id="reference-title">Referência</h3><p id="reference-competence" class="reference-competence"></p></div>
+<div class="reference-total"><span>Total da referência</span><strong id="reference-total">0</strong></div>
 </div>
-<div>
-<span>Diferença de quantidade</span>
-<strong id="diferenca">
-</strong>
-</div>
-<div>
-<span>Registros para revisão</span>
-<strong id="revisoes">
-</strong>
-</div>
-</div>
+<div id="reference-cards" class="reference-cards"></div>
+<p class="reference-note">A cor acompanha o quadro de referência usado na planilha operacional.</p>
+</section>
 <div class="downloads-main">
-<div>
-<h3>Seus arquivos estão prontos.</h3>
-<p>Excel para trabalhar. Relatório executivo para consultar. Lista completa em PDF quando precisar.</p>
-</div>
+<div><h3>Seus arquivos estão prontos.</h3><p>Excel para trabalhar. Relatório executivo para consultar. Lista completa em PDF quando precisar.</p></div>
 <div class="download-buttons">
-<a id="download" class="button" download>Baixar Excel <span aria-hidden="true">↓</span>
-</a>
-<a id="download-pdf" class="button secondary" download>Baixar relatório PDF <span aria-hidden="true">↓</span>
-</a>
-<a id="download-alunos-pdf" class="button secondary" download>Baixar lista de alunos PDF <span aria-hidden="true">↓</span>
-</a>
+<a id="download" class="button" download>Baixar Excel <span aria-hidden="true">↓</span></a>
+<a id="download-pdf" class="button secondary" download>Baixar relatório PDF <span aria-hidden="true">↓</span></a>
+<a id="download-alunos-pdf" class="button secondary" download>Baixar lista de alunos PDF <span aria-hidden="true">↓</span></a>
 </div>
 </div>
 <section class="reviews">
-<div class="section-heading">
-<h3>Pendências e revisões</h3>
-<span id="review-count">
-</span>
-</div>
-<p id="review-caption">
-</p>
-<div id="review-rows">
-</div>
+<div class="section-heading"><h3>Pendências e revisões</h3><span id="review-count"></span></div>
+<p id="review-caption"></p><div id="review-rows"></div>
 </section>
-<details class="technical">
-<summary>Opções técnicas e informações da execução</summary>
-<p id="detail">
-</p>
-<p id="execution">
-</p>
-<div class="technical-downloads">
-<a id="download-csv" download>Alunos · CSV ↓</a>
-<a id="download-json" download>Dados · JSON ↓</a>
-<a id="download-all" download>Pacote completo · ZIP ↓</a>
-</div>
+<details class="technical"><summary>Opções técnicas e informações da execução</summary><p id="detail"></p><p id="execution"></p>
+<div class="technical-downloads"><a id="download-csv" download>Alunos · CSV ↓</a><a id="download-json" download>Dados · JSON ↓</a><a id="download-all" download>Pacote completo · ZIP ↓</a></div>
 </details>
 </section>
-<footer>
-<span>Perseus <span aria-hidden="true">/</span> Clareza para conferir.</span>
-<span>Processamento local · Sem envio de documentos a serviços externos</span>
-</footer>
+<footer><span>Perseus <span aria-hidden="true">/</span> Clareza para conferir.</span><span>Processamento local · Sem envio de documentos a serviços externos</span></footer>
 </main>
 </body>
 </html>
