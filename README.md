@@ -10,7 +10,7 @@ A interface mostra os totais do documento, o quadro colorido da referência, a *
 
 ## Como o STATUS_CURSO é decidido
 
-O sistema agora separa três camadas:
+O sistema separa três camadas:
 
 1. **regra de negócio confirmada** — fatos esclarecidos pela área;
 2. `regras_status_curso.json` — transcrição da aba `Legenda_Cursos_Status`;
@@ -25,6 +25,8 @@ Regras de negócio confirmadas em 08/09/2026:
 - `DI` significa compra de **disciplina isolada**, por exemplo uma matéria como Lógica de Programação.
 
 A biblioteca não apaga a legenda. Exemplo importante: a legenda informa `CIB → DI`, mas os quadros históricos de agosto/setembro usam CIB como **Graduação**. Como a regra específica de CIB ainda não foi esclarecida, isso permanece marcado como compatibilidade histórica, não como verdade empresarial.
+
+A compatibilidade histórica está limitada às competências de agosto e setembro já validadas. Uma competência futura não herda automaticamente `CIB → Graduação` nem as combinações históricas; nela o Perseus volta à regra confirmada/legenda até existir nova confirmação empresarial.
 
 Regras gerais:
 
@@ -46,7 +48,7 @@ Cada execução também gera `biblioteca_divergencias.json` dentro do resultado 
 As pendências empresariais conhecidas agora são:
 
 - `SETRA` — significado/categoria ainda desconhecidos;
-- `15` — valor encontrado no campo Curso e ainda não explicado.
+- `15` — valor confirmado como realmente presente na coluna Curso, mas significado/categoria ainda não esclarecidos; deve ser confirmado com a pessoa responsável pela lista.
 
 `LPI` e `PCG` deixaram de ser pendências.
 
@@ -64,7 +66,7 @@ A planilha histórica de setembro possui total 2.211 e distribui:
 - NÃO LOCALIZADO 4
 - MÚLTIPLAS CATEGORIAS 189
 
-Com os novos esclarecimentos de negócio, mantendo as demais compatibilidades históricas apenas para comparação, setembro passa a:
+Com os novos esclarecimentos de negócio, mantendo as demais compatibilidades históricas apenas para explicar/reproduzir setembro, a classificação atual passa a:
 
 - **GRADUAÇÃO 947**
 - MESTRADO 325
@@ -79,7 +81,7 @@ Com os novos esclarecimentos de negócio, mantendo as demais compatibilidades hi
 
 A diferença é explicada por dois alunos `LPI` que saem de NÃO LOCALIZADO para GRADUAÇÃO e um aluno `PCG` que sai de NÃO LOCALIZADO para POS.
 
-O código `15` aparece junto de cursos já sustentados como DI; por isso permanece uma pendência de qualidade de dado sem criar uma linha adicional em NÃO LOCALIZADO.
+O valor `15` aparece junto de cursos já sustentados como DI; por isso o registro continua classificado como DI, mas permanece marcado `REVISAR` até seu significado ser confirmado.
 
 A conferência de quantidade do PDF continua independente: agosto permanece 2.050/2.050; setembro permanece 2.213 informados contra 2.211 extraídos, diferença −2. Nenhum registro é criado para fechar o total.
 
