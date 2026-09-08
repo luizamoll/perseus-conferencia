@@ -41,14 +41,21 @@ Também são gerados:
 
 Identificadores permanecem como texto, inclusive zeros à esquerda. O sistema não cria nem remove registros para fechar totais.
 
-## Conferência de quantidade validada
+## Validação real atual
 
-A base de extração permanece a mesma:
+A extração aprovada permanece inalterada:
 
-- Agosto/2026: 2.050 informados e 2.050 extraídos.
-- Setembro/2026: 2.213 informados e 2.211 extraídos; diferença -2 preservada.
+- **Agosto/2026:** 2.050 informados e 2.050 extraídos; diferença 0.
+- **Setembro/2026:** 2.213 informados e 2.211 extraídos; diferença -2 preservada.
 
-A nova classificação por legenda oficial deve ser reprocessada para atualizar as quantidades por `STATUS_CURSO`; os totais de alunos não são forçados.
+Com a legenda oficial aplicada:
+
+- **Agosto:** 1.978 classificados automaticamente e 72 registros em `NÃO LOCALIZADO`/revisão.
+- **Setembro:** 2.133 classificados automaticamente e 78 registros em `NÃO LOCALIZADO`/revisão, além da diferença de quantidade de -2.
+
+Essas revisões aumentaram em relação ao classificador histórico porque siglas que apareciam classificadas manualmente no passado, mas **não existem na legenda oficial**, agora ficam explicitamente como não localizadas em vez de serem inferidas. As mais frequentes são `TEOC` e `EFB`; a decisão de incluí-las na legenda depende de confirmação empresarial.
+
+A soma da consolidação por categoria continua exatamente igual ao total extraído: 2.050 em agosto e 2.211 em setembro.
 
 ## Instalação em outro ambiente
 
@@ -71,6 +78,8 @@ python -m unittest discover -v
 node --test test_interface.cjs
 python validar_reais.py --saida resultados_teste_novos
 ```
+
+A branch `feat/nova-interface` também possui GitHub Actions para executar automaticamente os testes Python e da interface.
 
 `validar_reais.py` processa os dois PDFs de exemplo e verifica extração, identificadores, `STATUS_CURSO`, `COMPETENCIA`, consolidação, Excel e relatório executivo.
 
