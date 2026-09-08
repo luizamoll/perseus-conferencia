@@ -49,7 +49,7 @@ def processar(job, arquivo, pasta):
         with TRAVA:
             job.update(estado="concluido", registros=len(resultado["registros"]),
                        conferencia=resultado["conferencia"], metadados=resultado["metadados"],
-                       excel=excel, pdf=pdf, resumo=resumo, divergencias=pendencias[:10], casos_revisao=sum(r["Registros para revisão"] for r in resumo), total_pendencias=len(pendencias),
+                       excel=excel, pdf=pdf, resumo=resumo, divergencias=pendencias, casos_revisao=sum(r["Registros para revisão"] for r in resumo), total_pendencias=len(pendencias),
                        alertas=len(resultado["revisao"]), revisoes_classificacao=revisoes_classificacao,
                        amostra=[{k:v for k,v in r.items() if k != "Células originais"} for r in resultado["registros"][:10]])
     except Exception as exc:

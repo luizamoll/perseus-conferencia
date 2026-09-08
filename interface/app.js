@@ -1,57 +1,66 @@
+'use strict';
 const $=id=>document.getElementById(id);
-let arquivo=null,token=null,ocupado=false;
 const numero=n=>new Intl.NumberFormat('pt-BR').format(n);
-const erro=msg=>{$('error').textContent=msg;$('error').hidden=false;};
+let arquivo=null,token=null,ocupado=false,dragDepth=0;
+function estado(value){document.body.dataset.state=value;}
+function inicioDaTela(){window.scrollTo({top:0,behavior:'instant'});}
+function etapa(n){[1,2,3,4].forEach(i=>{const el=$(`step${i}`);el.classList.toggle('active',i===n);el.classList.toggle('done',i<n);if(i===n)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current');});}
+function mensagemErro(raw){
+ const text=String(raw||'');
+ if(/senha|password|encrypt|protegido/i.test(text))return ['Este PDF está protegido.','Use uma cópia sem senha, exportada pelo Perseus, e tente novamente.'];
+ if(/80|grande|tamanho|limite/i.test(text))return ['Este arquivo ultrapassa o limite.','Selecione um PDF de até 80 MB.'];
+ if(/cabeçalho|estrutura|incompatível|período.*encontr|reconhecid|nenhuma tabela|metadados contraditórios/i.test(text))return ['Não reconhecemos este relatório.','Use o PDF “Alunos Coletados para Fatura”, exportado pelo Perseus, com texto selecionável.'];
+ if(/%PDF|não.*PDF|arquivo.*PDF|vazio/i.test(text))return ['Precisamos de um PDF válido.','Selecione o relatório original do Perseus. Renomear outro arquivo para .pdf não o transforma em PDF.'];
+ if(/salvar|espaço|permission|permissionerror|export|gerar/i.test(text))return ['Não foi possível preparar os arquivos.','Confira o espaço disponível e a permissão de gravação na pasta de resultados. Depois, processe o relatório novamente.'];
+ if(/conexão|fetch|network|sessão|encontrado nesta/i.test(text))return ['A conexão com o programa local foi interrompida.','Abra o Perseus pelo iniciador local e recarregue esta página. Se a sessão terminou, selecione o PDF novamente.'];
+ return ['Não foi possível concluir a leitura.','Confira se o PDF original abre normalmente e tente novamente. Se persistir, use os detalhes abaixo para solicitar ajuda.'];
+}
+function erro(raw,custom){const [title,message]=custom||mensagemErro(raw);$('error-title').textContent=title;$('error-message').textContent=message;$('error-technical').textContent=raw||'';$('error-details').hidden=!raw;$('error-details').open=false;$('error').hidden=false;estado('error');$('error-title').focus();}
+function limparArquivo(){arquivo=null;$('pdf').value='';$('filename').textContent='Seu relatório começa aqui.';$('filehint').textContent='Arraste o PDF ou escolha um arquivo no seu computador.';$('processar').disabled=true;}
 function escolher(file){
- if(ocupado)return;
+ if(ocupado||!file)return;
  $('error').hidden=true;
- if(!file)return;
- if(!file.name.toLowerCase().endsWith('.pdf')||file.size===0||file.size>80*1024*1024){arquivo=null;$('processar').disabled=true;erro('Escolha um PDF com até 80 MB.');return;}
- arquivo=file;$('filename').textContent=file.name;$('filehint').textContent=`${(file.size/1024/1024).toFixed(1)} MB · pronto para processar`;$('processar').disabled=false;
+ if(!file.name.toLowerCase().endsWith('.pdf')||file.size===0||file.size>80*1024*1024){limparArquivo();erro('',file.size>80*1024*1024?['Este arquivo ultrapassa o limite.','Selecione um PDF de até 80 MB.']:['Precisamos de um PDF válido.','Escolha um arquivo PDF do Perseus que não esteja vazio.']);return;}
+ arquivo=file;$('filename').textContent=file.name;$('filehint').textContent=`${new Intl.NumberFormat('pt-BR',{maximumFractionDigits:1}).format(file.size/1024/1024)} MB · Documento selecionado. Podemos começar.`;$('processar').disabled=false;estado('selected');
 }
 $('pdf').addEventListener('change',e=>escolher(e.target.files[0]));
-for(const event of ['dragenter','dragover'])$('drop').addEventListener(event,e=>{e.preventDefault();$('drop').classList.add('drag');});
-for(const event of ['dragleave','drop'])$('drop').addEventListener(event,e=>{e.preventDefault();$('drop').classList.remove('drag');});
-$('drop').addEventListener('drop',e=>escolher(e.dataTransfer.files[0]));
-function etapa(n){[1,2,3,4].forEach(i=>{const el=$(`step${i}`);el.classList.toggle('active',i===n);el.classList.toggle('done',i<n);if(i===n)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current');});}
-async function json(url,opts){let r;try{r=await fetch(url,opts);}catch{throw new Error('A conexão com o programa local foi interrompida. Confira se a janela do Python continua aberta e recarregue esta página para retomar o acompanhamento.');}const data=await r.json();if(!r.ok)throw new Error(data.erro||'Não foi possível completar a operação.');return data;}
+$('drop').addEventListener('dragenter',e=>{e.preventDefault();if(ocupado)return;dragDepth++;$('drop').classList.add('drag');estado('dragging');});
+$('drop').addEventListener('dragover',e=>{e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect='copy';});
+$('drop').addEventListener('dragleave',e=>{e.preventDefault();dragDepth=Math.max(0,dragDepth-1);if(!dragDepth){$('drop').classList.remove('drag');estado(arquivo?'selected':'idle');}});
+$('drop').addEventListener('drop',e=>{e.preventDefault();dragDepth=0;$('drop').classList.remove('drag');estado(arquivo?'selected':'idle');escolher(e.dataTransfer.files[0]);});
+// Prevent the browser from navigating away if a document misses the drop area.
+window.addEventListener('dragover',e=>e.preventDefault());window.addEventListener('drop',e=>e.preventDefault());
+async function json(url,opts){let response;try{response=await fetch(url,opts);}catch{throw new Error('Conexão local interrompida.');}let data;try{data=await response.json();}catch{throw new Error('Resposta inválida do programa local.');}if(!response.ok)throw new Error(data.erro||'Não foi possível completar a operação.');return data;}
+function texto(tag,value,className){const el=document.createElement(tag);el.textContent=value??'—';if(className)el.className=className;return el;}
 function concluir(job){
- job.excel=job.excel||"alunos.xlsx";job.casos_revisao=job.casos_revisao??((job.alertas||0)+(job.revisoes_classificacao||0));job.divergencias=job.divergencias||[];
- ocupado=false;$('loading').hidden=true;$('result').hidden=false;etapa(3);
- const c=job.conferencia[0],m=job.metadados,r=job.resumo[0],diff=r['Diferença'];
- $('result-title').textContent=`Fatura ${r['Competência da fatura']} · Coleta ${r['Período de coleta']}`;
- $('result-file').textContent=`${job.arquivo} · Execução ${m.execucao} · ${m.processado_em}`;
- $('informado').textContent=numero(c['Coletado informado']);$('extraido').textContent=numero(c['Linhas extraídas']);$('diferenca').textContent=(diff>0?'+':'')+numero(diff);
- const revisoes=job.revisoes_classificacao||0;
- const ok=diff===0&&r['Registros para revisão']===0&&r['Alertas sem registro associado']===0;
- $('outcome').className=ok?'ok':'warn';
- $('outcome').textContent=r['Status geral'];
- $('detail').textContent=`${numero(c['Identificadores distintos'])} identificadores distintos · ${numero(job.alertas)} alertas de leitura · ${numero(revisoes)} classificações para revisão · Intervalo ${c.Início} a ${c.Fim}. Quantidade faturada informada: ${numero(m.quantidade_faturada)}; esse valor é apenas transcrito do PDF e não é calculado por este MVP.`;
- $('download').href=`/download/${job.id}/${job.excel}`;$('download').download=job.excel;$('excel-name').textContent=job.excel;$('download-json').href=`/download/${job.id}/resultado.json`;$('download-csv').href=`/download/${job.id}/alunos.csv`;$('download-all').href=`/download/${job.id}/resultado.zip`;
- $('download-pdf').href=`/download/${job.id}/${job.pdf}`;$('download-pdf').download=job.pdf;
- $('revisoes').textContent=numero(job.casos_revisao);
- $('diferenca').className=diff===0?'success-text':'danger-text';
- $('revisoes').className=job.casos_revisao?'attention-text':'success-text';
- $('review-caption').textContent=job.total_pendencias?(job.divergencias.length?`Mostrando ${job.divergencias.length} de ${numero(job.total_pendencias)} pendências. Consulte todas na aba Divergências do Excel.`:"Reinicie o Perseus e processe o PDF novamente para exibir a prévia e gerar o novo Excel."):'Nenhuma divergência de quantidade, leitura ou classificação identificada.';
- $('review-rows').replaceChildren();for(const r of job.divergencias){const tr=document.createElement('tr');for(const campo of ['Aluno','Curso','Motivo compreensível','Localização/origem']){const td=document.createElement('td');td.textContent=r[campo]||'—';tr.appendChild(td);}$('review-rows').appendChild(tr);}
- $('rows').replaceChildren();for(const r of job.amostra){const tr=document.createElement('tr');for(const campo of ['Aluno','Curso','Data da Coleta','Página']){const td=document.createElement('td');td.textContent=r[campo];tr.appendChild(td);}$('rows').appendChild(tr);}
+ const c=job.conferencia[0],m=job.metadados,r=job.resumo[0],diff=r['Diferença'],revisoes=r['Registros para revisão'];
+ ocupado=false;$('loading').hidden=true;$('setup').hidden=true;$('result').hidden=false;$('error').hidden=true;etapa(3);$('result-title').focus();inicioDaTela();
+ const pendencias=job.divergencias||[],temRevisao=revisoes>0||r['Alertas sem registro associado']>0;
+ estado(diff!==0||temRevisao?'review':'success');
+ $('result-file').textContent=job.arquivo;
+ $('invoice').textContent=r['Competência da fatura'];$('collection').textContent=r['Período de coleta'];$('interval').textContent=`${c.Início} a ${c.Fim}`;
+ $('informado').textContent=numero(c['Coletado informado']);$('extraido').textContent=numero(c['Linhas extraídas']);$('diferenca').textContent=(diff>0?'+':'')+numero(diff);$('revisoes').textContent=numero(revisoes);
+ $('diferenca').className=diff!==0?'attention-text':'';$('revisoes').className=revisoes?'attention-text':'';
+ $('outcome').textContent=diff!==0?'≠ Diferença de quantidade encontrada':temRevisao?'! Totais conferem. Há revisões pendentes.':'✓ Conferência sem diferença';
+ $('outcome-description').textContent=diff!==0?`O relatório informa ${numero(c['Coletado informado'])} registros e encontramos ${numero(c['Linhas extraídas'])}. Confira a diferença e as pendências abaixo.`:temRevisao?`As quantidades coincidem. ${numero(revisoes)} registros precisam de revisão humana${r['Alertas sem registro associado']?' e há alertas de leitura adicionais':''}.`:'As quantidades coincidem e não foram identificadas pendências de leitura ou classificação.';
+ for(const [id,name] of [['download',job.excel],['download-pdf',job.pdf],['download-json','resultado.json'],['download-csv','alunos.csv'],['download-all','resultado.zip']]){const link=$(id);link.href=`/download/${encodeURIComponent(job.id)}/${encodeURIComponent(name)}`;link.download=name;}
+ $('review-count').textContent=`${numero(job.total_pendencias)} ${job.total_pendencias===1?'pendência':'pendências'}`;
+ $('review-caption').textContent=job.total_pendencias?`${numero(revisoes)} registros para revisão${diff!==0?' e uma pendência de quantidade':''}. Abra cada item para conferir a explicação e a origem. As dúvidas permanecem sinalizadas também no Excel e no PDF.`:'Nenhuma pendência de quantidade, leitura ou classificação identificada.';
+ $('review-rows').replaceChildren();
+ for(const row of pendencias){const item=document.createElement('details');item.className='review-item';const summary=document.createElement('summary');const name=texto('span',row.Aluno||'Conferência do relatório','review-name');name.appendChild(texto('small',row.Identificador?`Identificador: ${row.Identificador}`:'Relatório'));summary.append(name,texto('span',row.Curso||'—'),texto('span',row['Problema encontrado']||row['Motivo compreensível'],'review-reason'));item.appendChild(summary);const detail=document.createElement('div');detail.className='review-detail';detail.append(texto('p',row['Motivo compreensível']),texto('p',`Origem: ${row['Localização/origem']||'Resumo do relatório'}`));const technical=Object.entries(row).filter(([key,value])=>value&&!['Aluno','Identificador','Curso','Problema encontrado','Motivo compreensível','Localização/origem'].includes(key));if(technical.length){const more=document.createElement('details');more.appendChild(texto('summary','Ver detalhes técnicos'));for(const [key,value]of technical)more.appendChild(texto('p',`${key}: ${value}`));detail.appendChild(more);}item.appendChild(detail);$('review-rows').appendChild(item);}
+ $('detail').textContent=`${numero(c['Identificadores distintos'])} identificadores distintos · ${numero(job.alertas)} alertas de leitura · ${numero(job.revisoes_classificacao)} classificações para revisão. Quantidade faturada transcrita do documento: ${numero(m.quantidade_faturada)}.`;
+ $('execution').textContent=`Execução: ${m.execucao} · Processado em: ${m.processado_em}`;
 }
 async function acompanhar(id){
- const job=await json(`/api/trabalho/${id}`);
- if(job.estado==='concluido'){sessionStorage.removeItem('perseus-job');concluir(job);return;}
- if(job.estado==='erro'){sessionStorage.removeItem('perseus-job');throw new Error(job.erro);}
- $('progress-text').textContent=job.pagina?`${job.etapa || "Lendo tabelas"} · página ${job.pagina} de ${job.paginas_pdf} do documento · ${numero(job.registros)} registros encontrados. A leitura considera o primeiro bloco, não necessariamente todas as páginas.`:'Recebendo o PDF.';
- await new Promise(resolve=>setTimeout(resolve,900));return acompanhar(id);
+ while(true){const job=await json(`/api/trabalho/${encodeURIComponent(id)}`);if(job.estado==='concluido'){sessionStorage.removeItem('perseus-job');concluir(job);return;}if(job.estado==='erro'){sessionStorage.removeItem('perseus-job');throw new Error(job.detalhe||job.erro);}
+ $('progress-title').textContent=job.etapa?.includes('Preparando')?'Preparando Excel e relatório PDF':job.pagina?'Lendo e conferindo o relatório':'Recebendo seu documento';
+ $('progress-text').textContent=job.pagina?`Página ${numero(job.pagina)} de ${numero(job.paginas_pdf)} do documento · ${numero(job.registros)} registros encontrados`:'O processamento começará assim que o PDF for recebido.';
+ await new Promise(resolve=>setTimeout(resolve,900));}
 }
-function falhou(e){ocupado=false;$('loading').hidden=true;$('setup').hidden=false;$('processar').disabled=!arquivo;etapa(1);erro(e.message||'O sistema local não respondeu. Verifique se o Python continua aberto.');}
-$('processar').addEventListener('click',async()=>{
- if(!arquivo||ocupado)return;
- ocupado=true;$('error').hidden=true;$('setup').hidden=true;$('loading').hidden=false;$('result').hidden=true;$('processar').disabled=true;etapa(2);
- try{if(!token)token=(await json('/api/sessao')).token;const job=await json('/api/processar',{method:'POST',headers:{'Content-Type':'application/pdf','X-Local-Token':token,'X-Filename':encodeURIComponent(arquivo.name)},body:arquivo});sessionStorage.setItem('perseus-job',job.id);await acompanhar(job.id);}catch(e){falhou(e);}
-});
-$('novo').addEventListener('click',()=>{arquivo=null;$('pdf').value='';$('filename').textContent='Escolha ou arraste seu PDF';$('filehint').textContent='PDF de até 80 MB';$('processar').disabled=true;$('result').hidden=true;$('setup').hidden=false;etapa(1);});
-async function iniciar(){try{token=(await json('/api/sessao')).token;const id=sessionStorage.getItem('perseus-job');if(id){ocupado=true;$('setup').hidden=true;$('loading').hidden=false;etapa(2);await acompanhar(id);}}catch(e){sessionStorage.removeItem('perseus-job');falhou(e);}}iniciar();
-
-$('download').addEventListener('click',()=>etapa(4));
-
-$('download-pdf').addEventListener('click',()=>etapa(4));
+function falhou(e){ocupado=false;$('loading').hidden=true;$('setup').hidden=false;$('result').hidden=true;$('processar').disabled=!arquivo;etapa(1);erro(e.message);}
+function iniciarLeitura(){ocupado=true;$('error').hidden=true;$('setup').hidden=true;$('result').hidden=true;$('loading').hidden=false;$('processar').disabled=true;$('progress-title').textContent='Recebendo seu documento';$('progress-text').textContent='Preparando a leitura do PDF.';estado('processing');etapa(2);$('progress-title').focus();inicioDaTela();}
+$('processar').addEventListener('click',async()=>{if(!arquivo||ocupado)return;iniciarLeitura();try{if(!token)token=(await json('/api/sessao')).token;const job=await json('/api/processar',{method:'POST',headers:{'Content-Type':'application/pdf','X-Local-Token':token,'X-Filename':encodeURIComponent(arquivo.name)},body:arquivo});sessionStorage.setItem('perseus-job',job.id);await acompanhar(job.id);}catch(e){falhou(e);}});
+$('novo').addEventListener('click',()=>{limparArquivo();$('result').hidden=true;$('setup').hidden=false;$('error').hidden=true;estado('idle');etapa(1);$('pdf').focus();});
+for(const id of ['download','download-pdf'])$(id).addEventListener('click',()=>etapa(4));
+async function iniciar(){try{token=(await json('/api/sessao')).token;const id=sessionStorage.getItem('perseus-job');if(id){iniciarLeitura();await acompanhar(id);}}catch(e){sessionStorage.removeItem('perseus-job');falhou(e);}}
+iniciar();

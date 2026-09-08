@@ -86,3 +86,13 @@ Não havia Microsoft Excel instalado para homologação nativa nessa aplicação
 ## Arquivos finais
 
 `agosto/` e `setembro/` contêm o XLSX, o relatório PDF e o JSON da respectiva execução validada. `validacao.json` registra contagens, hashes e nomes exatos. O código atual está em `../perseus_mvp/`; o pacote auditado contém esse projeto e seus testes. As saídas anteriores permanecem como histórico e não devem ser confundidas com esta pasta de auditoria.
+
+## Retomada e encerramento
+
+A suíte completa foi executada novamente com os dois PDFs reais habilitados: **44 testes aprovados, nenhum ignorado**. O validador reproduzível reabriu os XLSX e PDFs de agosto/setembro e voltou a comparar os identificadores com o texto dos PDFs reais: aprovado.
+
+Agosto permanece 2.050/2.050, diferença 0, 24 registros em revisão. Setembro permanece 2.213/2.211, diferença -2, 28 registros em revisão mais uma pendência de quantidade. Identificadores textuais e zeros iniciais preservados. Classificação, mapa e CSS permanecem idênticos ao estado anterior à auditoria. Nesta retomada não foi necessária alteração de código.
+
+Não há falha técnica bloqueante conhecida nos dois documentos e no fluxo homologado do primeiro bloco. O sistema está apto a seguir para a etapa exclusiva de interface/UX nesse escopo. As decisões empresariais pendentes e a diferença de setembro continuam para revisão; a abertura no Microsoft Excel instalado e outros layouts/ambientes não foram homologados.
+
+O pacote Perseus_MVP_Auditado.zip inclui o projeto, os testes, as saídas reais e este diagnóstico. Use o iniciar.command da pasta perseus_mvp contida nesse pacote, após encerrar uma instância antiga.

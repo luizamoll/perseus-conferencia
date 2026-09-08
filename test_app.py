@@ -22,6 +22,23 @@ class ApplicationTests(unittest.TestCase):
                 self.assertTrue(z.read(job['pdf']).startswith(b'%PDF-'))
                 self.assertIn('resultado.json',z.namelist())
             self.assertEqual(job['metadados']['arquivo'],'origem.pdf')
+    def test_todas_pendencias_disponiveis_para_interface(self):
+        rows=[]
+        for i in range(15):
+            row=list(fixtures.ROW)
+            row[0]=f'Pessoa fictícia({i:04d})'
+            row[1]='LPI'
+            rows.append(row)
+        r=fixtures.ExtractionTests().run_pdf([fixtures.Page(rows)])
+        with tempfile.TemporaryDirectory() as d:
+            job={'arquivo':'teste.pdf'}
+            with patch('app.extrair',return_value=r):
+                app.processar(job,Path(d)/'entrada.pdf',Path(d))
+            self.assertEqual(job['estado'],'concluido')
+            self.assertGreater(job['total_pendencias'],10)
+            self.assertEqual(len(job['divergencias']),job['total_pendencias'])
+            self.assertEqual(job['divergencias'],app.divergencias(r))
+
     def test_failure_state_is_actionable(self):
         job={}
         with patch('app.extrair',side_effect=ValueError('Cabeçalho Perseus não reconhecido.')):
