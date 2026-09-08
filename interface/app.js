@@ -51,6 +51,14 @@ function renderizarReferencia(job){
    card.append(topo,valor,proporcao);cards.appendChild(card);
  }
 }
+function renderizarBiblioteca(job){
+ const biblioteca=job.biblioteca||{},itens=biblioteca.siglas_nao_localizadas||[];
+ const total=itens.reduce((s,item)=>s+Number(item.ocorrencias||0),0);
+ $('library-count').textContent=itens.length?`${numero(itens.length)} ${itens.length===1?'sigla':'siglas'}`:'Sem novas siglas';
+ $('library-description').textContent=itens.length?`Encontramos ${numero(total)} ocorrência${total===1?'':'s'} de siglas ainda sem mapeamento. Elas foram registradas na biblioteca local para revisão; nenhuma foi apagada ou transformada em aluno novo.`:'Nenhuma sigla nova ficou sem mapeamento nesta referência. A biblioteca operacional foi aplicada normalmente.';
+ const chips=$('library-chips');chips.replaceChildren();
+ for(const item of itens){const chip=texto('span',`${item.sigla} · ${numero(item.ocorrencias)}`,'library-chip');chips.appendChild(chip);}
+}
 function concluir(job){
  const c=job.conferencia[0],m=job.metadados,r=job.resumo[0],diff=r['Diferença'],revisoes=r['Registros para revisão'];
  ocupado=false;$('loading').hidden=true;$('setup').hidden=true;$('result').hidden=false;$('error').hidden=true;etapa(3);$('result-title').focus();inicioDaTela();
@@ -63,7 +71,8 @@ function concluir(job){
  $('outcome').textContent=diff!==0?'≠ Diferença de quantidade encontrada':temRevisao?'! Totais conferem. Há revisões pendentes.':'✓ Conferência sem diferença';
  $('outcome-description').textContent=diff!==0?`O relatório informa ${numero(c['Coletado informado'])} registros e encontramos ${numero(c['Linhas extraídas'])}. Confira a diferença e as pendências abaixo.`:temRevisao?`As quantidades coincidem. ${numero(revisoes)} registros precisam de revisão humana${r['Alertas sem registro associado']?' e há alertas de leitura adicionais':''}.`:'As quantidades coincidem e não foram identificadas pendências de leitura ou classificação.';
  renderizarReferencia(job);
- for(const [id,name] of [['download',job.excel],['download-pdf',job.pdf],['download-alunos-pdf',job.pdf_alunos],['download-json','resultado.json'],['download-csv','alunos.csv'],['download-all','resultado.zip']]){const link=$(id);link.href=`/download/${encodeURIComponent(job.id)}/${encodeURIComponent(name)}`;link.download=name;}
+ renderizarBiblioteca(job);
+ for(const [id,name] of [['download',job.excel],['download-pdf',job.pdf],['download-alunos-pdf',job.pdf_alunos],['download-json','resultado.json'],['download-csv','alunos.csv'],['download-library','biblioteca_divergencias.json'],['download-all','resultado.zip']]){const link=$(id);link.href=`/download/${encodeURIComponent(job.id)}/${encodeURIComponent(name)}`;link.download=name;}
  $('review-count').textContent=`${numero(job.total_pendencias)} ${job.total_pendencias===1?'pendência':'pendências'}`;
  $('review-caption').textContent=job.total_pendencias?`${numero(revisoes)} registros para revisão${diff!==0?' e uma pendência de quantidade':''}. Abra cada item para conferir a explicação e a origem. O STATUS_CURSO não localizado permanece visível também no Excel e nos PDFs.`:'Nenhuma pendência de quantidade, leitura ou classificação identificada.';
  $('review-rows').replaceChildren();
