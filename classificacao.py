@@ -1,4 +1,4 @@
-"""Classificação operacional de STATUS_CURSO a partir da legenda oficial."""
+"""Classificação operacional de STATUS_CURSO com legenda + biblioteca de divergências."""
 import argparse
 import copy
 import csv
@@ -6,6 +6,12 @@ import hashlib
 import json
 from pathlib import Path
 
+from biblioteca import (
+    carregar_biblioteca,
+    categoria_biblioteca,
+    combinacao_biblioteca,
+    resumo_execucao,
+)
 from referencia import competencia_operacional, consolidar_classificacao, referencia_visual
 
 
@@ -41,15 +47,15 @@ def normalizar_categoria(valor, regras=None):
     }
     if texto in aliases:
         return aliases[texto]
-    # Também aceita diretamente os códigos de categoria presentes na legenda.
     codigos = regras.get("categorias", {})
     if texto in codigos:
-        return codigos[texto]
+        return normalizar_categoria(codigos[texto], regras)
     return texto
 
 
-def classificar_registro(registro, regras=None):
+def classificar_registro(registro, regras=None, biblioteca=None):
     regras = carregar_regras() if regras is None else regras
+    biblioteca = carregar_biblioteca() if biblioteca is None else biblioteca
     original = registro.get("Curso")
     cursos = cursos_do_registro(original)
     motivos, mapeados, desconhecidos = [], [], []
@@ -60,63 +66,92 @@ def classificar_registro(registro, regras=None):
     for curso in cursos:
         if not curso:
             continue
-        codigo_categoria = regras.get("siglas", {}).get(curso)
-        categoria = normalizar_categoria(codigo_categoria, regras) if codigo_categoria else None
+        codigo_legenda = regras.get("siglas", {}).get(curso)
+        categoria_legenda = normalizar_categoria(codigo_legenda, regras) if codigo_legenda else None
+        categoria_excecao = categoria_biblioteca(curso, biblioteca)
+        if categoria_excecao:
+            categoria = normalizar_categoria(categoria_excecao, regras)
+            fonte = "biblioteca"
+        else:
+            categoria = categoria_legenda
+            fonte = "legenda" if categoria_legenda else None
         if categoria is None:
             desconhecidos.append(curso)
-            motivos.append("Curso não localizado na legenda oficial: " + curso)
+            motivos.append("Curso não localizado na legenda nem na biblioteca: " + curso)
         mapeados.append({
             "curso": curso,
             "categoria": categoria,
-            "referencia_regra": "Legenda_Cursos_Status." + curso if codigo_categoria else None,
-            "base": regras.get("fonte"),
+            "categoria_legenda": categoria_legenda,
+            "fonte": fonte,
+            "referencia_regra": (
+                "biblioteca.mapeamentos_siglas." + curso if fonte == "biblioteca" else
+                "Legenda_Cursos_Status." + curso if fonte == "legenda" else None
+            ),
         })
 
     categorias = sorted({m["categoria"] for m in mapeados if m["categoria"]})
-    if desconhecidos or not cursos or any(not curso for curso in cursos):
-        categoria_final = "NÃO LOCALIZADO"
-        status_final = "REVISAR"
+    cursos_validos = [curso for curso in cursos if curso]
+    override_combinacao = combinacao_biblioteca(cursos_validos, biblioteca) if cursos_validos else None
+
+    if override_combinacao and not any(not curso for curso in cursos):
+        categoria_final = normalizar_categoria(override_combinacao, regras)
+        fonte_final = "biblioteca_combinacao"
     elif len(categorias) == 1:
         categoria_final = categorias[0]
-        status_final = "CLASSIFICADO"
+        fonte_final = "categorias_mapeadas"
     elif len(categorias) > 1:
         categoria_final = "MÚLTIPLAS CATEGORIAS"
-        status_final = "CLASSIFICADO"
+        fonte_final = "categorias_mapeadas"
     else:
         categoria_final = "NÃO LOCALIZADO"
+        fonte_final = "sem_mapeamento"
+
+    # Uma sigla desconhecida não apaga a categoria sustentada pelas demais siglas,
+    # mas continua visível para revisão e entra na biblioteca local de divergências.
+    status_final = "REVISAR" if motivos else "CLASSIFICADO"
+    if not cursos_validos:
+        categoria_final = "NÃO LOCALIZADO"
         status_final = "REVISAR"
-        if not motivos:
-            motivos.append("Curso ausente, inválido ou item vazio")
 
     return {
         "registro_original": copy.deepcopy(registro),
         "cursos_originais": original,
+        "cursos_lista": cursos_validos,
         "cursos_mapeados": mapeados,
         "categorias_mapeadas": categorias,
         "categoria_final": categoria_final,
+        "fonte_categoria_final": fonte_final,
         "status_final": status_final,
         "motivos_revisao": list(dict.fromkeys(motivos)),
+        "siglas_nao_localizadas": list(dict.fromkeys(desconhecidos)),
     }
 
 
-def classificar_resultado(resultado, regras=None):
+def classificar_resultado(resultado, regras=None, biblioteca=None):
     regras = carregar_regras() if regras is None else regras
-    auditoria = [classificar_registro(r, regras) for r in resultado["registros"]]
+    biblioteca = carregar_biblioteca() if biblioteca is None else biblioteca
+    auditoria = [classificar_registro(r, regras, biblioteca) for r in resultado["registros"]]
     competencia_fatura = resultado.get("metadados", {}).get("competencia_fatura", "")
     competencia = competencia_operacional(competencia_fatura)
     referencia = referencia_visual(competencia_fatura)
     consolidacao = consolidar_classificacao(auditoria)
+    biblioteca_resumo = resumo_execucao(auditoria, biblioteca)
     return {
         "versao_regras": regras["versao"],
-        "fontes": [regras.get("fonte", "Legenda_Cursos_Status")],
+        "versao_biblioteca": biblioteca.get("versao", ""),
+        "fontes": [regras.get("fonte", "Legenda_Cursos_Status"), biblioteca.get("fonte", "Biblioteca operacional")],
         "sha256_regras": hashlib.sha256(
             json.dumps(regras, ensure_ascii=False, sort_keys=True).encode("utf-8")
+        ).hexdigest(),
+        "sha256_biblioteca": hashlib.sha256(
+            json.dumps(biblioteca, ensure_ascii=False, sort_keys=True).encode("utf-8")
         ).hexdigest(),
         "metadados_extracao": copy.deepcopy(resultado.get("metadados", {})),
         "conferencia_extracao": copy.deepcopy(resultado.get("conferencia", [])),
         "competencia_operacional": competencia,
         "referencia": referencia,
         "consolidacao": consolidacao,
+        "biblioteca": biblioteca_resumo,
         "auditoria": auditoria,
     }
 
@@ -160,7 +195,7 @@ def salvar_auditoria(resultado, pasta):
 
 
 def main():
-    p = argparse.ArgumentParser(description="Classifica resultado.json pela legenda oficial de STATUS_CURSO")
+    p = argparse.ArgumentParser(description="Classifica resultado.json pela legenda e biblioteca operacional")
     p.add_argument("resultado", type=Path)
     p.add_argument("--saida", required=True, type=Path)
     p.add_argument("--regras", type=Path)
