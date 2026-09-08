@@ -10,7 +10,9 @@ from biblioteca import (
     carregar_biblioteca,
     categoria_biblioteca,
     combinacao_biblioteca,
+    origem_biblioteca,
     resumo_execucao,
+    usar_compatibilidade_historica,
 )
 from referencia import competencia_operacional, consolidar_classificacao, referencia_visual
 
@@ -53,7 +55,7 @@ def normalizar_categoria(valor, regras=None):
     return texto
 
 
-def classificar_registro(registro, regras=None, biblioteca=None):
+def classificar_registro(registro, regras=None, biblioteca=None, permitir_historico=False):
     regras = carregar_regras() if regras is None else regras
     biblioteca = carregar_biblioteca() if biblioteca is None else biblioteca
     original = registro.get("Curso")
@@ -68,7 +70,8 @@ def classificar_registro(registro, regras=None, biblioteca=None):
             continue
         codigo_legenda = regras.get("siglas", {}).get(curso)
         categoria_legenda = normalizar_categoria(codigo_legenda, regras) if codigo_legenda else None
-        categoria_excecao = categoria_biblioteca(curso, biblioteca)
+        categoria_excecao = categoria_biblioteca(curso, biblioteca, permitir_historico)
+        origem_excecao = origem_biblioteca(curso, biblioteca, permitir_historico)
         if categoria_excecao:
             categoria = normalizar_categoria(categoria_excecao, regras)
             fonte = "biblioteca"
@@ -77,21 +80,26 @@ def classificar_registro(registro, regras=None, biblioteca=None):
             fonte = "legenda" if categoria_legenda else None
         if categoria is None:
             desconhecidos.append(curso)
-            motivos.append("Curso não localizado na legenda nem na biblioteca: " + curso)
+            motivos.append("Curso não localizado na legenda nem nas regras confirmadas: " + curso)
         mapeados.append({
             "curso": curso,
             "categoria": categoria,
             "categoria_legenda": categoria_legenda,
             "fonte": fonte,
+            "origem_biblioteca": origem_excecao,
             "referencia_regra": (
-                "biblioteca.mapeamentos_siglas." + curso if fonte == "biblioteca" else
+                "biblioteca.confirmados_negocio." + curso if origem_excecao == "negocio_confirmado" else
+                "biblioteca.compatibilidade_historica." + curso if origem_excecao in {"compatibilidade_historica", "biblioteca_legada"} else
                 "Legenda_Cursos_Status." + curso if fonte == "legenda" else None
             ),
         })
 
     categorias = sorted({m["categoria"] for m in mapeados if m["categoria"]})
     cursos_validos = [curso for curso in cursos if curso]
-    override_combinacao = combinacao_biblioteca(cursos_validos, biblioteca) if cursos_validos else None
+    override_combinacao = (
+        combinacao_biblioteca(cursos_validos, biblioteca, permitir_historico)
+        if cursos_validos else None
+    )
 
     if override_combinacao and not any(not curso for curso in cursos):
         categoria_final = normalizar_categoria(override_combinacao, regras)
@@ -130,9 +138,13 @@ def classificar_registro(registro, regras=None, biblioteca=None):
 def classificar_resultado(resultado, regras=None, biblioteca=None):
     regras = carregar_regras() if regras is None else regras
     biblioteca = carregar_biblioteca() if biblioteca is None else biblioteca
-    auditoria = [classificar_registro(r, regras, biblioteca) for r in resultado["registros"]]
     competencia_fatura = resultado.get("metadados", {}).get("competencia_fatura", "")
     competencia = competencia_operacional(competencia_fatura)
+    permitir_historico = usar_compatibilidade_historica(competencia, biblioteca)
+    auditoria = [
+        classificar_registro(r, regras, biblioteca, permitir_historico)
+        for r in resultado["registros"]
+    ]
     referencia = referencia_visual(competencia_fatura)
     consolidacao = consolidar_classificacao(auditoria)
     biblioteca_resumo = resumo_execucao(auditoria, biblioteca)
@@ -149,6 +161,7 @@ def classificar_resultado(resultado, regras=None, biblioteca=None):
         "metadados_extracao": copy.deepcopy(resultado.get("metadados", {})),
         "conferencia_extracao": copy.deepcopy(resultado.get("conferencia", [])),
         "competencia_operacional": competencia,
+        "modo_compatibilidade_historica": permitir_historico,
         "referencia": referencia,
         "consolidacao": consolidacao,
         "biblioteca": biblioteca_resumo,
