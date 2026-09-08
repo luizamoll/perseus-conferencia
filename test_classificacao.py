@@ -6,7 +6,7 @@ from pathlib import Path
 
 from classificacao import carregar_regras, classificar_registro, classificar_resultado, salvar_auditoria
 from referencia import CORES_REFERENCIA
-from biblioteca import carregar_biblioteca, registrar_nao_localizados
+from biblioteca import carregar_biblioteca, origem_biblioteca, registrar_nao_localizados
 
 
 class ClassificacaoTests(unittest.TestCase):
@@ -22,7 +22,8 @@ class ClassificacaoTests(unittest.TestCase):
         esperados={
             "DIR":"GRADUAÇÃO","CIB":"GRADUAÇÃO","CEXT":"DI","EVE":"CURSO LIVRE",
             "TA":"APERFEIÇOAMENTO","MEST":"MESTRADO","MBAAD":"MBA","PSO":"POS",
-            "TEOC":"GRADUAÇÃO","EFB":"GRADUAÇÃO","GEQUA":"POS",
+            "TEOC":"GRADUAÇÃO","EFB":"GRADUAÇÃO","LPI":"GRADUAÇÃO","PCG":"POS",
+            "GEQUA":"POS",
         }
         for curso,categoria in esperados.items():
             with self.subTest(curso=curso):
@@ -30,13 +31,22 @@ class ClassificacaoTests(unittest.TestCase):
                 self.assertEqual(a["categoria_final"],categoria)
                 self.assertEqual(a["status_final"],"CLASSIFICADO")
 
+    def test_regras_confirmadas_tem_prioridade_na_biblioteca(self):
+        self.assertEqual(origem_biblioteca("LPI",self.biblioteca),"negocio_confirmado")
+        self.assertEqual(origem_biblioteca("TEOC",self.biblioteca),"negocio_confirmado")
+        self.assertEqual(origem_biblioteca("EFB",self.biblioteca),"negocio_confirmado")
+        self.assertEqual(origem_biblioteca("PCG",self.biblioteca),"negocio_confirmado")
+        self.assertEqual(self.classify("LPI")["categoria_final"],"GRADUAÇÃO")
+        self.assertEqual(self.classify("PCG")["categoria_final"],"POS")
+
     def test_biblioteca_nao_apaga_legenda_oficial(self):
         self.assertEqual(self.regras["siglas"]["CIB"],"DI")
-        self.assertEqual(self.biblioteca["mapeamentos_siglas"]["CIB"],"GRADUAÇÃO")
+        self.assertEqual(self.biblioteca["mapeamentos_historicos_compatibilidade"]["CIB"],"GRADUAÇÃO")
         a=self.classify("CIB")
         self.assertEqual(a["categoria_final"],"GRADUAÇÃO")
         self.assertEqual(a["cursos_mapeados"][0]["categoria_legenda"],"DI")
         self.assertEqual(a["cursos_mapeados"][0]["fonte"],"biblioteca")
+        self.assertEqual(origem_biblioteca("CIB",self.biblioteca),"compatibilidade_historica")
 
     def test_mesma_categoria_e_repetidos(self):
         casos={"CEXT, CHU, GN":"DI","CEXT, CEXT":"DI","CONT, DIR":"GRADUAÇÃO","MEST, MEST":"MESTRADO"}
@@ -64,12 +74,10 @@ class ClassificacaoTests(unittest.TestCase):
                 self.assertEqual(a["status_final"],"CLASSIFICADO")
 
     def test_desconhecido_sozinho_e_misturado(self):
-        for curso in ["LPI","PCG","SETRA"]:
-            with self.subTest(curso=curso):
-                a=self.classify(curso)
-                self.assertEqual(a["categoria_final"],"NÃO LOCALIZADO")
-                self.assertEqual(a["status_final"],"REVISAR")
-                self.assertTrue(any("biblioteca" in m for m in a["motivos_revisao"]))
+        a=self.classify("SETRA")
+        self.assertEqual(a["categoria_final"],"NÃO LOCALIZADO")
+        self.assertEqual(a["status_final"],"REVISAR")
+        self.assertTrue(any("biblioteca" in m for m in a["motivos_revisao"]))
         a=self.classify("15, CEXT, CSAP, GN")
         self.assertEqual(a["categoria_final"],"DI")
         self.assertEqual(a["status_final"],"REVISAR")
@@ -107,26 +115,26 @@ class ClassificacaoTests(unittest.TestCase):
         self.assertEqual(a["referencia"]["titulo"],"Referência Setembro")
         self.assertEqual(a["referencia"]["cor"],"E59EDD")
         contagem={i["categoria"]:i["quantidade"] for i in a["consolidacao"]}
-        self.assertEqual(contagem["GRADUAÇÃO"],1)
+        self.assertEqual(contagem["GRADUAÇÃO"],2)
         self.assertEqual(contagem["DI"],1)
         self.assertEqual(contagem["MÚLTIPLAS CATEGORIAS"],1)
-        self.assertEqual(contagem["NÃO LOCALIZADO"],1)
+        self.assertEqual(contagem["NÃO LOCALIZADO"],0)
         self.assertEqual(sum(contagem.values()),4)
         nao={i["sigla"]:i["ocorrencias"] for i in a["biblioteca"]["siglas_nao_localizadas"]}
-        self.assertEqual(nao,{"15":1,"LPI":1})
+        self.assertEqual(nao,{"15":1})
 
     def test_cores_referencia_iguais_a_planilha(self):
         self.assertEqual(CORES_REFERENCIA,{2:"C2F1C8",3:"FBE3D6",4:"F9F9F9",5:"C2F1C8",6:"F2AA84",7:"F9F9F9",8:"C04F15",9:"E59EDD"})
 
     def test_registro_local_da_biblioteca_acumula_so_siglas(self):
-        resumo={"siglas_nao_localizadas":[{"sigla":"LPI","ocorrencias":2},{"sigla":"15","ocorrencias":1}]}
+        resumo={"siglas_nao_localizadas":[{"sigla":"SETRA","ocorrencias":2},{"sigla":"15","ocorrencias":1}]}
         with tempfile.TemporaryDirectory() as d:
             caminho=Path(d)/"nao_localizados.json"
             registrar_nao_localizados(resumo,"Fatura_Final_Ref_Setembro",caminho)
-            registrar_nao_localizados({"siglas_nao_localizadas":[{"sigla":"LPI","ocorrencias":1}]},"Fatura_Final_Ref_Outubro_2026",caminho)
+            registrar_nao_localizados({"siglas_nao_localizadas":[{"sigla":"SETRA","ocorrencias":1}]},"Fatura_Final_Ref_Outubro_2026",caminho)
             dados=json.loads(caminho.read_text())
-            self.assertEqual(dados["siglas"]["LPI"]["ocorrencias_acumuladas"],3)
-            self.assertEqual(dados["siglas"]["LPI"]["ultima_competencia"],"Fatura_Final_Ref_Outubro_2026")
+            self.assertEqual(dados["siglas"]["SETRA"]["ocorrencias_acumuladas"],3)
+            self.assertEqual(dados["siglas"]["SETRA"]["ultima_competencia"],"Fatura_Final_Ref_Outubro_2026")
             self.assertNotIn("Aluno",caminho.read_text())
 
     def test_auditoria_roundtrip(self):
