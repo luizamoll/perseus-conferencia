@@ -21,35 +21,40 @@ def chave_combinacao(cursos):
     return "|".join(sorted(set(cursos)))
 
 
-def categoria_biblioteca(curso, biblioteca=None):
-    """Retorna primeiro regra confirmada; depois compatibilidade histórica.
-
-    Mantém leitura compatível com a versão antiga da biblioteca enquanto os
-    arquivos locais ainda não forem atualizados.
-    """
+def usar_compatibilidade_historica(competencia, biblioteca=None):
     biblioteca = carregar_biblioteca() if biblioteca is None else biblioteca
-    confirmados = biblioteca.get("confirmados_negocio", {})
-    if curso in confirmados:
-        return confirmados[curso]
-    historicos = biblioteca.get("mapeamentos_historicos_compatibilidade", {})
-    if curso in historicos:
-        return historicos[curso]
-    return biblioteca.get("mapeamentos_siglas", {}).get(curso)
+    return competencia in set(biblioteca.get("competencias_historicas_compatibilidade", []))
 
 
-def origem_biblioteca(curso, biblioteca=None):
+def origem_biblioteca(curso, biblioteca=None, permitir_historico=False):
     biblioteca = carregar_biblioteca() if biblioteca is None else biblioteca
     if curso in biblioteca.get("confirmados_negocio", {}):
         return "negocio_confirmado"
-    if curso in biblioteca.get("mapeamentos_historicos_compatibilidade", {}):
+    if permitir_historico and curso in biblioteca.get("mapeamentos_historicos_compatibilidade", {}):
         return "compatibilidade_historica"
-    if curso in biblioteca.get("mapeamentos_siglas", {}):
+    if permitir_historico and curso in biblioteca.get("mapeamentos_siglas", {}):
         return "biblioteca_legada"
     return None
 
 
-def combinacao_biblioteca(cursos, biblioteca=None):
+def categoria_biblioteca(curso, biblioteca=None, permitir_historico=False):
+    """Regras confirmadas valem sempre; histórico só nas competências autorizadas."""
     biblioteca = carregar_biblioteca() if biblioteca is None else biblioteca
+    confirmados = biblioteca.get("confirmados_negocio", {})
+    if curso in confirmados:
+        return confirmados[curso]
+    if permitir_historico:
+        historicos = biblioteca.get("mapeamentos_historicos_compatibilidade", {})
+        if curso in historicos:
+            return historicos[curso]
+        return biblioteca.get("mapeamentos_siglas", {}).get(curso)
+    return None
+
+
+def combinacao_biblioteca(cursos, biblioteca=None, permitir_historico=False):
+    biblioteca = carregar_biblioteca() if biblioteca is None else biblioteca
+    if not permitir_historico:
+        return None
     chave = chave_combinacao(cursos)
     historicas = biblioteca.get("combinacoes_historicas_compatibilidade", {})
     if chave in historicas:
@@ -66,7 +71,7 @@ def resumo_execucao(auditoria, biblioteca=None):
     for item in auditoria:
         for curso in item.get("cursos_mapeados", []):
             sigla = curso.get("curso", "")
-            origem = origem_biblioteca(sigla, biblioteca)
+            origem = curso.get("origem_biblioteca")
             if origem == "negocio_confirmado":
                 confirmadas[sigla] += 1
             elif origem in {"compatibilidade_historica", "biblioteca_legada"}:
