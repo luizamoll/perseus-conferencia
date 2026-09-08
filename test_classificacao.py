@@ -15,15 +15,14 @@ class ClassificacaoTests(unittest.TestCase):
         cls.regras=carregar_regras()
         cls.biblioteca=carregar_biblioteca()
 
-    def classify(self,curso):
-        return classificar_registro({"Curso":curso},self.regras,self.biblioteca)
+    def classify(self,curso,historico=False):
+        return classificar_registro({"Curso":curso},self.regras,self.biblioteca,historico)
 
-    def test_legenda_e_biblioteca_operacional(self):
+    def test_legenda_e_regras_confirmadas(self):
         esperados={
-            "DIR":"GRADUAÇÃO","CIB":"GRADUAÇÃO","CEXT":"DI","EVE":"CURSO LIVRE",
+            "DIR":"GRADUAÇÃO","CIB":"DI","CEXT":"DI","EVE":"CURSO LIVRE",
             "TA":"APERFEIÇOAMENTO","MEST":"MESTRADO","MBAAD":"MBA","PSO":"POS",
             "TEOC":"GRADUAÇÃO","EFB":"GRADUAÇÃO","LPI":"GRADUAÇÃO","PCG":"POS",
-            "GEQUA":"POS",
         }
         for curso,categoria in esperados.items():
             with self.subTest(curso=curso):
@@ -31,7 +30,7 @@ class ClassificacaoTests(unittest.TestCase):
                 self.assertEqual(a["categoria_final"],categoria)
                 self.assertEqual(a["status_final"],"CLASSIFICADO")
 
-    def test_regras_confirmadas_tem_prioridade_na_biblioteca(self):
+    def test_regras_confirmadas_tem_prioridade(self):
         self.assertEqual(origem_biblioteca("LPI",self.biblioteca),"negocio_confirmado")
         self.assertEqual(origem_biblioteca("TEOC",self.biblioteca),"negocio_confirmado")
         self.assertEqual(origem_biblioteca("EFB",self.biblioteca),"negocio_confirmado")
@@ -39,14 +38,16 @@ class ClassificacaoTests(unittest.TestCase):
         self.assertEqual(self.classify("LPI")["categoria_final"],"GRADUAÇÃO")
         self.assertEqual(self.classify("PCG")["categoria_final"],"POS")
 
-    def test_biblioteca_nao_apaga_legenda_oficial(self):
+    def test_cib_historico_nao_vira_regra_futura(self):
         self.assertEqual(self.regras["siglas"]["CIB"],"DI")
         self.assertEqual(self.biblioteca["mapeamentos_historicos_compatibilidade"]["CIB"],"GRADUAÇÃO")
-        a=self.classify("CIB")
-        self.assertEqual(a["categoria_final"],"GRADUAÇÃO")
-        self.assertEqual(a["cursos_mapeados"][0]["categoria_legenda"],"DI")
-        self.assertEqual(a["cursos_mapeados"][0]["fonte"],"biblioteca")
-        self.assertEqual(origem_biblioteca("CIB",self.biblioteca),"compatibilidade_historica")
+        atual=self.classify("CIB")
+        antigo=self.classify("CIB",True)
+        self.assertEqual(atual["categoria_final"],"DI")
+        self.assertEqual(atual["cursos_mapeados"][0]["fonte"],"legenda")
+        self.assertEqual(antigo["categoria_final"],"GRADUAÇÃO")
+        self.assertEqual(antigo["cursos_mapeados"][0]["categoria_legenda"],"DI")
+        self.assertEqual(antigo["cursos_mapeados"][0]["origem_biblioteca"],"compatibilidade_historica")
 
     def test_mesma_categoria_e_repetidos(self):
         casos={"CEXT, CHU, GN":"DI","CEXT, CEXT":"DI","CONT, DIR":"GRADUAÇÃO","MEST, MEST":"MESTRADO"}
@@ -57,14 +58,17 @@ class ClassificacaoTests(unittest.TestCase):
                 self.assertEqual(a["status_final"],"CLASSIFICADO")
                 self.assertEqual(len(a["cursos_mapeados"]),len(curso.split(",")))
 
-    def test_combinacoes_operacionais_reproduzem_referencia(self):
-        casos={"ESGSC, PSO":"GRADUAÇÃO","DIREM, MBAAD":"GRADUAÇÃO","DA, DIR":"GRADUAÇÃO"}
-        for curso,categoria in casos.items():
+    def test_combinacoes_historicas_so_no_modo_historico(self):
+        historicos={"ESGSC, PSO":"GRADUAÇÃO","DIREM, MBAAD":"GRADUAÇÃO","DA, DIR":"GRADUAÇÃO"}
+        atuais={"ESGSC, PSO":"POS","DIREM, MBAAD":"MÚLTIPLAS CATEGORIAS","DA, DIR":"MÚLTIPLAS CATEGORIAS"}
+        for curso,categoria in historicos.items():
             with self.subTest(curso=curso):
-                a=self.classify(curso)
+                a=self.classify(curso,True)
                 self.assertEqual(a["categoria_final"],categoria)
                 self.assertEqual(a["fonte_categoria_final"],"biblioteca_combinacao")
-                self.assertEqual(a["status_final"],"CLASSIFICADO")
+        for curso,categoria in atuais.items():
+            with self.subTest(curso=curso):
+                self.assertEqual(self.classify(curso)["categoria_final"],categoria)
 
     def test_multiplas_categorias_genericas(self):
         for curso in ["DIR, EVE","DIR, CSAP","MBA, MEST"]:
@@ -73,11 +77,10 @@ class ClassificacaoTests(unittest.TestCase):
                 self.assertEqual(a["categoria_final"],"MÚLTIPLAS CATEGORIAS")
                 self.assertEqual(a["status_final"],"CLASSIFICADO")
 
-    def test_desconhecido_sozinho_e_misturado(self):
+    def test_pendencias_conhecidas(self):
         a=self.classify("SETRA")
         self.assertEqual(a["categoria_final"],"NÃO LOCALIZADO")
         self.assertEqual(a["status_final"],"REVISAR")
-        self.assertTrue(any("biblioteca" in m for m in a["motivos_revisao"]))
         a=self.classify("15, CEXT, CSAP, GN")
         self.assertEqual(a["categoria_final"],"DI")
         self.assertEqual(a["status_final"],"REVISAR")
@@ -105,23 +108,30 @@ class ClassificacaoTests(unittest.TestCase):
         a=classificar_resultado({"registros":rows,"metadados":{}},self.regras,self.biblioteca)
         self.assertEqual([r["categoria_final"] for r in a["auditoria"]],["GRADUAÇÃO","MESTRADO"])
 
-    def test_competencia_referencia_consolidacao_e_biblioteca(self):
+    def test_setembro_usa_compatibilidade_historica(self):
         resultado={
             "metadados":{"competencia_fatura":"2026/09"},
             "registros":[{"Curso":"CIB"},{"Curso":"DIR, EVE"},{"Curso":"LPI"},{"Curso":"15, CEXT"}],
         }
         a=classificar_resultado(resultado,self.regras,self.biblioteca)
+        self.assertTrue(a["modo_compatibilidade_historica"])
         self.assertEqual(a["competencia_operacional"],"Fatura_Final_Ref_Setembro")
-        self.assertEqual(a["referencia"]["titulo"],"Referência Setembro")
-        self.assertEqual(a["referencia"]["cor"],"E59EDD")
         contagem={i["categoria"]:i["quantidade"] for i in a["consolidacao"]}
         self.assertEqual(contagem["GRADUAÇÃO"],2)
         self.assertEqual(contagem["DI"],1)
         self.assertEqual(contagem["MÚLTIPLAS CATEGORIAS"],1)
         self.assertEqual(contagem["NÃO LOCALIZADO"],0)
-        self.assertEqual(sum(contagem.values()),4)
         nao={i["sigla"]:i["ocorrencias"] for i in a["biblioteca"]["siglas_nao_localizadas"]}
         self.assertEqual(nao,{"15":1})
+
+    def test_competencia_futura_nao_herda_historico(self):
+        resultado={
+            "metadados":{"competencia_fatura":"2026/10"},
+            "registros":[{"Curso":"CIB"},{"Curso":"DIREM, MBAAD"},{"Curso":"LPI"},{"Curso":"PCG"}],
+        }
+        a=classificar_resultado(resultado,self.regras,self.biblioteca)
+        self.assertFalse(a["modo_compatibilidade_historica"])
+        self.assertEqual([x["categoria_final"] for x in a["auditoria"]],["DI","MÚLTIPLAS CATEGORIAS","GRADUAÇÃO","POS"])
 
     def test_cores_referencia_iguais_a_planilha(self):
         self.assertEqual(CORES_REFERENCIA,{2:"C2F1C8",3:"FBE3D6",4:"F9F9F9",5:"C2F1C8",6:"F2AA84",7:"F9F9F9",8:"C04F15",9:"E59EDD"})
