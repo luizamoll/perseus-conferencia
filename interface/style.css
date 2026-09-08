@@ -72,12 +72,9 @@ body[data-state=processing] .eyes{animation:look 2s ease-in-out infinite}
 body[data-state=review] .smile,body[data-state=error] .smile{display:none}
 body[data-state=review] .curious,body[data-state=error] .worried{display:block}
 body[data-state=success] .sheet{animation:none;transform:rotate(3deg)}
-@keyframes breathe{50%{transform:translateY(-3px) rotate(1deg)}
-}
-@keyframes read{50%{transform:translateY(52px)}
-}
-@keyframes look{50%{transform:translateX(4px)}
-}
+@keyframes breathe{50%{transform:translateY(-3px) rotate(1deg)}}
+@keyframes read{50%{transform:translateY(52px)}}
+@keyframes look{50%{transform:translateX(4px)}}
 .loading{text-align:center;padding:45px 20px 65px;min-height:440px}
 .loading .paper{width:112px;height:130px;margin-bottom:15px}
 .loading h2{margin:12px 0}
@@ -106,10 +103,30 @@ body[data-state=review] .outcome-wrap{background:#f3eedf}
 .metrics span{font-size:12px;color:var(--muted)}
 .metrics strong{font-size:37px;letter-spacing:-1px;font-weight:450;font-variant-numeric:tabular-nums}
 .attention-text{color:var(--attention)}
+.reference-summary{--reference-color:#e7efea;position:relative;margin:30px 0 6px;padding:24px;border:1px solid color-mix(in srgb,var(--reference-color) 65%,#cad5ce);border-radius:14px;background:linear-gradient(180deg,color-mix(in srgb,var(--reference-color) 22%,#fff) 0,#fff 72%);overflow:hidden}
+.reference-summary:before{content:"";position:absolute;inset:0 auto 0 0;width:7px;background:var(--reference-color)}
+.reference-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:20px;padding-left:4px}
+.reference-heading .eyebrow{margin:0 0 5px}
+.reference-heading h3{font-family:Georgia,serif;font-size:28px;font-weight:400;margin:0 0 5px;letter-spacing:-.5px}
+.reference-competence{margin:0;color:var(--muted);font-size:11px;overflow-wrap:anywhere}
+.reference-total{min-width:145px;padding:12px 16px;border-radius:10px;background:var(--reference-color);display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.reference-total span{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#31423f}
+.reference-total strong{font-size:30px;font-weight:550;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.reference-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.reference-card{position:relative;min-height:112px;padding:15px 15px 13px;border:1px solid #e0e6e1;border-radius:10px;background:#fff;box-shadow:0 1px 0 rgba(32,59,57,.03)}
+.reference-card:before{content:"";position:absolute;top:0;left:12px;right:12px;height:3px;border-radius:0 0 3px 3px;background:var(--reference-color)}
+.reference-card-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;min-height:34px}
+.reference-category{font-size:10px;line-height:1.35;font-weight:700;letter-spacing:.45px;color:#52635f}
+.reference-dot{width:8px;height:8px;border-radius:50%;background:var(--reference-color);flex:0 0 auto;margin-top:2px}
+.reference-card strong{display:block;font-size:27px;font-weight:520;letter-spacing:-.7px;margin-top:5px;font-variant-numeric:tabular-nums}
+.reference-card small{display:block;color:var(--muted);font-size:10px;margin-top:4px}
+.reference-card.is-review{border-color:#e1c9a6;background:#fffaf3}
+.reference-card.is-review .reference-category:after{content:" · revisar";color:var(--attention);font-weight:600;text-transform:none;letter-spacing:0}
+.reference-note{font-size:10px;color:var(--muted);margin:14px 0 0;padding-left:4px}
 .downloads-main{padding:30px 0;display:flex;align-items:center;justify-content:space-between;gap:24px}
 .downloads-main h3{margin:0 0 6px}
 .downloads-main p{font-size:12px;color:var(--muted);margin:0}
-.download-buttons{display:flex;gap:12px}
+.download-buttons{display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end}
 .reviews{margin:22px 0 32px}
 .section-heading{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:15px}
 .section-heading h3{font-size:23px;margin:0}
@@ -135,55 +152,6 @@ footer{border-top:1px solid var(--line);padding:25px 0;margin-top:45px;display:f
 footer span span{margin:0 10px;color:#9ba995}
 body:has(#result:not([hidden])) .intro{display:none}
 body:has(#result:not([hidden])) .steps{margin-top:20px}
-@media(max-width:950px){header{padding:22px 32px}
-.workspace{gap:30px;grid-template-columns:1.4fr 1fr}
-.downloads-main{align-items:flex-start;flex-direction:column}
-.brand-caption{display:none}
-.upload-action{flex-wrap:wrap}
-.metrics{gap:14px}
-.metrics span{font-size:11px}
-}
-@media(max-width:640px){header{padding:20px}
-.local{font-size:10px}
-.brand{font-size:22px}
-main{padding:0 20px}
-.intro{padding:35px 0 24px}
-h1{font-size:37px;letter-spacing:-1px}
-.intro>p:last-child{font-size:13px}
-.desktop-break{display:none}
-.steps{justify-content:space-between;margin-bottom:24px}
-.steps li{font-size:10px;margin:0;padding:15px 0}
-.steps li span{display:block;margin:0 0 5px}
-.workspace{display:block}
-.drop{padding:20px 16px 24px}
-.drop h2{font-size:23px}
-.upload-action{padding:18px;flex-wrap:nowrap}
-.upload-action>span{font-size:10px}
-button,.button{padding:12px 14px;font-size:12px;gap:10px}
-.explanation{padding:35px 0 0}
-.explanation h2 br{display:none}
-.explanation h2{font-size:29px}
-.result-heading{align-items:flex-start;flex-direction:column;gap:5px}
-.result-heading h2{font-size:31px}
-.outcome-wrap{padding:16px 12px;gap:10px}
-.outcome-wrap h3{font-size:18px}
-.outcome-wrap p{font-size:12px}
-.periods{grid-template-columns:1fr 1.2fr;gap:20px}
-.periods .eyebrow{font-size:9px;letter-spacing:1px}
-.periods strong{font-size:24px}
-.periods #interval{font-size:11px}
-.metrics{grid-template-columns:1fr 1fr;gap:24px}
-.metrics strong{font-size:32px}
-.download-buttons{flex-direction:column;width:100%}
-.button{min-height:46px;justify-content:space-between}
-.section-heading h3{font-size:21px}
-.section-heading{gap:12px}
-.review-item summary{grid-template-columns:1fr;gap:9px}
-.review-detail{padding-left:0}
-.review-item summary:after{top:15px}
-.review-name small{display:inline;margin-left:12px}
-footer{flex-direction:column;gap:12px;margin-top:30px;line-height:1.7}
-}
-@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
-}
-
+@media(max-width:950px){header{padding:22px 32px}.workspace{gap:30px;grid-template-columns:1.4fr 1fr}.downloads-main{align-items:flex-start;flex-direction:column}.brand-caption{display:none}.upload-action{flex-wrap:wrap}.metrics{gap:14px}.metrics span{font-size:11px}.reference-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.download-buttons{justify-content:flex-start}}
+@media(max-width:640px){header{padding:20px}.local{font-size:10px}.brand{font-size:22px}main{padding:0 20px}.intro{padding:35px 0 24px}h1{font-size:37px;letter-spacing:-1px}.intro>p:last-child{font-size:13px}.desktop-break{display:none}.steps{justify-content:space-between;margin-bottom:24px}.steps li{font-size:10px;margin:0;padding:15px 0}.steps li span{display:block;margin:0 0 5px}.workspace{display:block}.drop{padding:20px 16px 24px}.drop h2{font-size:23px}.upload-action{padding:18px;flex-wrap:nowrap}.upload-action>span{font-size:10px}button,.button{padding:12px 14px;font-size:12px;gap:10px}.explanation{padding:35px 0 0}.explanation h2 br{display:none}.explanation h2{font-size:29px}.result-heading{align-items:flex-start;flex-direction:column;gap:5px}.result-heading h2{font-size:31px}.outcome-wrap{padding:16px 12px;gap:10px}.outcome-wrap h3{font-size:18px}.outcome-wrap p{font-size:12px}.periods{grid-template-columns:1fr 1.2fr;gap:20px}.periods .eyebrow{font-size:9px;letter-spacing:1px}.periods strong{font-size:24px}.periods #interval{font-size:11px}.metrics{grid-template-columns:1fr 1fr;gap:24px}.metrics strong{font-size:32px}.reference-summary{padding:20px 16px 18px;margin-top:24px}.reference-heading{flex-direction:column;gap:12px}.reference-heading h3{font-size:25px}.reference-total{width:100%;align-items:flex-start}.reference-cards{grid-template-columns:1fr 1fr}.reference-card{min-height:105px;padding:14px 12px}.reference-category{font-size:9px}.reference-card strong{font-size:24px}.download-buttons{flex-direction:column;width:100%}.button{min-height:46px;justify-content:space-between}.section-heading h3{font-size:21px}.section-heading{gap:12px}.review-item summary{grid-template-columns:1fr;gap:9px}.review-detail{padding-left:0}.review-item summary:after{top:15px}.review-name small{display:inline;margin-left:12px}footer{flex-direction:column;gap:12px;margin-top:30px;line-height:1.7}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
