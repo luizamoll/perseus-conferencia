@@ -49,12 +49,27 @@ def processar(job, arquivo, pasta):
         with zipfile.ZipFile(pasta / "resultado.zip", "w", zipfile.ZIP_DEFLATED) as z:
             for p in destino.iterdir():
                 z.write(p, p.name)
+        classificacao = resultado["classificacao"]
         with TRAVA:
-            job.update(estado="concluido", registros=len(resultado["registros"]),
-                       conferencia=resultado["conferencia"], metadados=resultado["metadados"],
-                       excel=excel, pdf=pdf, pdf_alunos=pdf_alunos, resumo=resumo, divergencias=pendencias, casos_revisao=sum(r["Registros para revisão"] for r in resumo), total_pendencias=len(pendencias),
-                       alertas=len(resultado["revisao"]), revisoes_classificacao=revisoes_classificacao,
-                       amostra=[{k:v for k,v in r.items() if k != "Células originais"} for r in resultado["registros"][:10]])
+            job.update(
+                estado="concluido",
+                registros=len(resultado["registros"]),
+                conferencia=resultado["conferencia"],
+                metadados=resultado["metadados"],
+                excel=excel,
+                pdf=pdf,
+                pdf_alunos=pdf_alunos,
+                resumo=resumo,
+                divergencias=pendencias,
+                casos_revisao=sum(r["Registros para revisão"] for r in resumo),
+                total_pendencias=len(pendencias),
+                alertas=len(resultado["revisao"]),
+                revisoes_classificacao=revisoes_classificacao,
+                referencia=classificacao.get("referencia", {}),
+                consolidacao=classificacao.get("consolidacao", []),
+                competencia_operacional=classificacao.get("competencia_operacional", ""),
+                amostra=[{k:v for k,v in r.items() if k != "Células originais"} for r in resultado["registros"][:10]],
+            )
     except Exception as exc:
         with TRAVA:
             job.update(estado="erro", erro=(str(exc) if isinstance(exc, ValueError) else "Não foi possível concluir a leitura ou salvar os resultados. Verifique se o PDF abre sem senha e se há espaço na pasta de resultados. Tente novamente."), detalhe=f"{type(exc).__name__}: {exc}")
