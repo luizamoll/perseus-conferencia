@@ -4,6 +4,7 @@ from collections import Counter
 
 def motivo_humano(motivo):
     regras = [
+        ('Curso não localizado na legenda oficial: ', 'O curso {} não está na legenda oficial. O registro foi mantido como NÃO LOCALIZADO para revisão.'),
         ('Conflito de fontes: ', 'As fontes disponíveis atribuem categorias diferentes ao curso {}. O responsável precisa confirmar a categoria.'),
         ('Sigla sem mapa suficiente: ', 'Não há evidência suficiente para classificar o curso {}. Confirme sua categoria.'),
         ('Combinação contradiz mapa no histórico: ', 'A classificação histórica da combinação {} diverge das categorias dos cursos. Confirme o tratamento correto.'),
