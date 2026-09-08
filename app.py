@@ -16,6 +16,7 @@ from urllib.parse import unquote, urlparse
 from perseus import extrair, salvar
 from classificacao import classificar_resultado
 from exportacao import nome_excel, nome_pdf
+from pdf_alunos import nome_pdf_alunos, salvar_pdf_alunos
 from apresentacao import divergencias, resumo_resultado
 
 BASE = Path(__file__).resolve().parent
@@ -39,17 +40,19 @@ def processar(job, arquivo, pasta):
         revisoes_classificacao = sum(a["status_final"] == "REVISAR" for a in resultado["classificacao"]["auditoria"])
         destino = pasta / "resultado"
         with TRAVA:
-            job.update(etapa="Preparando Excel e relatório PDF", registros=len(resultado["registros"]))
+            job.update(etapa="Preparando Excel e relatórios PDF", registros=len(resultado["registros"]))
         salvar(resultado, destino)
         pdf = nome_pdf(resultado)
         excel = nome_excel(resultado)
+        pdf_alunos = nome_pdf_alunos(resultado)
+        salvar_pdf_alunos(resultado, destino / pdf_alunos)
         with zipfile.ZipFile(pasta / "resultado.zip", "w", zipfile.ZIP_DEFLATED) as z:
             for p in destino.iterdir():
                 z.write(p, p.name)
         with TRAVA:
             job.update(estado="concluido", registros=len(resultado["registros"]),
                        conferencia=resultado["conferencia"], metadados=resultado["metadados"],
-                       excel=excel, pdf=pdf, resumo=resumo, divergencias=pendencias, casos_revisao=sum(r["Registros para revisão"] for r in resumo), total_pendencias=len(pendencias),
+                       excel=excel, pdf=pdf, pdf_alunos=pdf_alunos, resumo=resumo, divergencias=pendencias, casos_revisao=sum(r["Registros para revisão"] for r in resumo), total_pendencias=len(pendencias),
                        alertas=len(resultado["revisao"]), revisoes_classificacao=revisoes_classificacao,
                        amostra=[{k:v for k,v in r.items() if k != "Células originais"} for r in resultado["registros"][:10]])
     except Exception as exc:
@@ -106,6 +109,8 @@ class Pagina(BaseHTTPRequestHandler):
                 permitidos.add(job["excel"])
             if job and job.get("pdf"):
                 permitidos.add(job["pdf"])
+            if job and job.get("pdf_alunos"):
+                permitidos.add(job["pdf_alunos"])
             if not job or job["estado"] != "concluido" or nome not in permitidos:
                 return self.responder(404, {"erro": "Resultado indisponível."})
             arquivo = self.server.destino / id_job / (nome if nome.endswith(".zip") else "resultado/" + nome)
