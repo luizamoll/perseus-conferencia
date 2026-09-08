@@ -28,7 +28,6 @@ $('drop').addEventListener('dragenter',e=>{e.preventDefault();if(ocupado)return;
 $('drop').addEventListener('dragover',e=>{e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect='copy';});
 $('drop').addEventListener('dragleave',e=>{e.preventDefault();dragDepth=Math.max(0,dragDepth-1);if(!dragDepth){$('drop').classList.remove('drag');estado(arquivo?'selected':'idle');}});
 $('drop').addEventListener('drop',e=>{e.preventDefault();dragDepth=0;$('drop').classList.remove('drag');estado(arquivo?'selected':'idle');escolher(e.dataTransfer.files[0]);});
-// Prevent the browser from navigating away if a document misses the drop area.
 window.addEventListener('dragover',e=>e.preventDefault());window.addEventListener('drop',e=>e.preventDefault());
 async function json(url,opts){let response;try{response=await fetch(url,opts);}catch{throw new Error('Conexão local interrompida.');}let data;try{data=await response.json();}catch{throw new Error('Resposta inválida do programa local.');}if(!response.ok)throw new Error(data.erro||'Não foi possível completar a operação.');return data;}
 function texto(tag,value,className){const el=document.createElement(tag);el.textContent=value??'—';if(className)el.className=className;return el;}
@@ -43,7 +42,7 @@ function concluir(job){
  $('diferenca').className=diff!==0?'attention-text':'';$('revisoes').className=revisoes?'attention-text':'';
  $('outcome').textContent=diff!==0?'≠ Diferença de quantidade encontrada':temRevisao?'! Totais conferem. Há revisões pendentes.':'✓ Conferência sem diferença';
  $('outcome-description').textContent=diff!==0?`O relatório informa ${numero(c['Coletado informado'])} registros e encontramos ${numero(c['Linhas extraídas'])}. Confira a diferença e as pendências abaixo.`:temRevisao?`As quantidades coincidem. ${numero(revisoes)} registros precisam de revisão humana${r['Alertas sem registro associado']?' e há alertas de leitura adicionais':''}.`:'As quantidades coincidem e não foram identificadas pendências de leitura ou classificação.';
- for(const [id,name] of [['download',job.excel],['download-pdf',job.pdf],['download-json','resultado.json'],['download-csv','alunos.csv'],['download-all','resultado.zip']]){const link=$(id);link.href=`/download/${encodeURIComponent(job.id)}/${encodeURIComponent(name)}`;link.download=name;}
+ for(const [id,name] of [['download',job.excel],['download-pdf',job.pdf],['download-alunos-pdf',job.pdf_alunos],['download-json','resultado.json'],['download-csv','alunos.csv'],['download-all','resultado.zip']]){const link=$(id);link.href=`/download/${encodeURIComponent(job.id)}/${encodeURIComponent(name)}`;link.download=name;}
  $('review-count').textContent=`${numero(job.total_pendencias)} ${job.total_pendencias===1?'pendência':'pendências'}`;
  $('review-caption').textContent=job.total_pendencias?`${numero(revisoes)} registros para revisão${diff!==0?' e uma pendência de quantidade':''}. Abra cada item para conferir a explicação e a origem. As dúvidas permanecem sinalizadas também no Excel e no PDF.`:'Nenhuma pendência de quantidade, leitura ou classificação identificada.';
  $('review-rows').replaceChildren();
@@ -53,7 +52,7 @@ function concluir(job){
 }
 async function acompanhar(id){
  while(true){const job=await json(`/api/trabalho/${encodeURIComponent(id)}`);if(job.estado==='concluido'){sessionStorage.removeItem('perseus-job');concluir(job);return;}if(job.estado==='erro'){sessionStorage.removeItem('perseus-job');throw new Error(job.detalhe||job.erro);}
- $('progress-title').textContent=job.etapa?.includes('Preparando')?'Preparando Excel e relatório PDF':job.pagina?'Lendo e conferindo o relatório':'Recebendo seu documento';
+ $('progress-title').textContent=job.etapa?.includes('Preparando')?'Preparando Excel e relatórios PDF':job.pagina?'Lendo e conferindo o relatório':'Recebendo seu documento';
  $('progress-text').textContent=job.pagina?`Página ${numero(job.pagina)} de ${numero(job.paginas_pdf)} do documento · ${numero(job.registros)} registros encontrados`:'O processamento começará assim que o PDF for recebido.';
  await new Promise(resolve=>setTimeout(resolve,900));}
 }
@@ -61,6 +60,6 @@ function falhou(e){ocupado=false;$('loading').hidden=true;$('setup').hidden=fals
 function iniciarLeitura(){ocupado=true;$('error').hidden=true;$('setup').hidden=true;$('result').hidden=true;$('loading').hidden=false;$('processar').disabled=true;$('progress-title').textContent='Recebendo seu documento';$('progress-text').textContent='Preparando a leitura do PDF.';estado('processing');etapa(2);$('progress-title').focus();inicioDaTela();}
 $('processar').addEventListener('click',async()=>{if(!arquivo||ocupado)return;iniciarLeitura();try{if(!token)token=(await json('/api/sessao')).token;const job=await json('/api/processar',{method:'POST',headers:{'Content-Type':'application/pdf','X-Local-Token':token,'X-Filename':encodeURIComponent(arquivo.name)},body:arquivo});sessionStorage.setItem('perseus-job',job.id);await acompanhar(job.id);}catch(e){falhou(e);}});
 $('novo').addEventListener('click',()=>{limparArquivo();$('result').hidden=true;$('setup').hidden=false;$('error').hidden=true;estado('idle');etapa(1);$('pdf').focus();});
-for(const id of ['download','download-pdf'])$(id).addEventListener('click',()=>etapa(4));
+for(const id of ['download','download-pdf','download-alunos-pdf'])$(id).addEventListener('click',()=>etapa(4));
 async function iniciar(){try{token=(await json('/api/sessao')).token;const id=sessionStorage.getItem('perseus-job');if(id){iniciarLeitura();await acompanhar(id);}}catch(e){sessionStorage.removeItem('perseus-job');falhou(e);}}
 iniciar();
