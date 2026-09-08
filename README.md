@@ -1,22 +1,54 @@
-# Perseus — motor e saídas auditados
+# Perseus — conferência e referência de coleta
 
-PDF Perseus → primeiro bloco de coleta → extração → classificação observacional → conferência → Excel e relatório PDF.
+PDF Perseus → primeiro bloco de coleta → extração → `STATUS_CURSO` pela legenda oficial → conferência → consolidação da referência → Excel e PDFs.
 
 ## Usar neste Mac
 
-Encerre o servidor anterior com Control+C e abra `iniciar.command` nesta pasta. Mantenha o Terminal aberto. Selecione o PDF e clique em Processar PDF. Após a conferência, use **Baixar Excel** ou **Baixar relatório em PDF**. CSV/JSON/ZIP ficam nas opções técnicas.
+Encerre o servidor anterior com Control+C e abra `iniciar.command` nesta pasta. Mantenha o Terminal aberto. Selecione o PDF **Alunos Coletados para Fatura** e clique em Processar relatório.
 
-Os dois PDFs reais estão em `exemplos/`. Fatura agosto de 2026 contém coleta julho de 2026; fatura setembro contém coleta agosto. A competência é lida do documento, nunca deduzida do nome do arquivo.
+Após a conferência, a interface mostra os totais do documento, o quadro colorido da referência por `STATUS_CURSO`, as pendências e os arquivos para download.
 
-O XLSX tem Resumo, Alunos e Divergências. Identificadores são texto; listas de cursos/datas/status permanecem como na origem, sem criar alunos adicionais. Uma data única é armazenada como data Excel. Motivos administrativos aparecem na revisão; motivos técnicos e células originais permanecem no JSON.
+Os dois PDFs reais estão em `exemplos/`. Fatura agosto de 2026 contém coleta julho de 2026; fatura setembro contém coleta agosto. A competência da fatura é lida do documento, nunca deduzida do nome do arquivo.
 
-Cada execução tem pasta e nome próprios. Interface, Excel e PDF usam o mesmo resumo validado. Edições manuais do Excel não refazem a conferência do PDF. Resultados anteriores não são atualizados; reprocesse o documento.
+## Regra de negócio de STATUS_CURSO
 
-## Validação
+A fonte oficial é `regras_status_curso.json`, transcrita da aba `Legenda_Cursos_Status` da planilha de referência fornecida. O histórico mensal pode ser comparado, mas não decide a categoria.
 
-Agosto: 2.050 informados e 2.050 extraídos, 24 registros em revisão. Setembro: 2.213 informados e 2.211 extraídos, 28 registros em revisão e uma pendência de quantidade. Nenhuma contagem foi forçada. Os 4.261 registros e suas classificações permaneceram iguais à base anterior.
+Regras principais:
 
-O mapa é observacional. CIB, cursos sem evidência e combinações conflitantes continuam para revisão. Não calcula faturamento/licenças, não decide a regra empresarial de múltiplos cursos e não preenche a planilha mestre.
+- mesma categoria, mesmo com siglas repetidas → mantém a categoria;
+- categorias diferentes no mesmo registro → `MÚLTIPLAS CATEGORIAS`;
+- qualquer sigla ausente da legenda → `NÃO LOCALIZADO` e `REVISAR`;
+- `CIB` → `DI`;
+- `EVE` → `CURSO LIVRE`.
+
+Veja `REGRA_STATUS_CURSO.md` para a regra completa, nomenclatura de `COMPETENCIA` e cores mensais.
+
+## Saídas
+
+O XLSX tem quatro abas:
+
+1. **Resumo** — totais e metadados da execução;
+2. **Referência** — consolidação por `STATUS_CURSO`, com a cor do mês;
+3. **Alunos** — dados extraídos + `STATUS_CURSO` + `COMPETENCIA`;
+4. **Divergências** — somente o que precisa de atenção.
+
+Também são gerados:
+
+- relatório PDF executivo;
+- PDF com a lista completa de alunos;
+- CSV/JSON e ZIP técnico.
+
+Identificadores permanecem como texto, inclusive zeros à esquerda. O sistema não cria nem remove registros para fechar totais.
+
+## Conferência de quantidade validada
+
+A base de extração permanece a mesma:
+
+- Agosto/2026: 2.050 informados e 2.050 extraídos.
+- Setembro/2026: 2.213 informados e 2.211 extraídos; diferença -2 preservada.
+
+A nova classificação por legenda oficial deve ser reprocessada para atualizar as quantidades por `STATUS_CURSO`; os totais de alunos não são forçados.
 
 ## Instalação em outro ambiente
 
@@ -29,31 +61,29 @@ python -m pip install -r requirements.txt
 python app.py
 ```
 
-Para outra porta, use `python app.py --porta 8879`. A instalação em outros computadores não foi homologada.
+No Mac já preparado, prefira `./iniciar.command`.
 
 ## Testes
 
 ```sh
 python -m pip install -r requirements-dev.txt
 python -m unittest discover -v
+node --test test_interface.cjs
 python validar_reais.py --saida resultados_teste_novos
 ```
 
-O último comando processa os dois exemplos reais, valida os arquivos gerados e compara os identificadores com uma leitura textual independente. A pasta de saída deve ser nova. Para revalidar uma entrega existente com subpastas agosto/setembro:
-
-```sh
-python validar_reais.py --resultados-existentes /caminho/para/auditoria
-```
-
-O teste antigo em `test_mvp.py` usa `PERSEUS_AGOSTO` e `PERSEUS_SETEMBRO`; sem essas variáveis é ignorado explicitamente. A validação real acima independe dessas variáveis.
+`validar_reais.py` processa os dois PDFs de exemplo e verifica extração, identificadores, `STATUS_CURSO`, `COMPETENCIA`, consolidação, Excel e relatório executivo.
 
 ## Organização
 
-- `perseus.py`: extração, validações de leitura e gravação do conjunto de saídas.
-- `classificacao.py` e `regras_classificacao.json`: classificação independente e mapa preservados.
-- `apresentacao.py`: validação de consistência, resumo comum, contagem por registro e explicações administrativas.
-- `exportacao.py`: XLSX e PDF.
-- `app.py`: servidor local, execução identificada e downloads isolados.
-- `test_auditoria.py`: regressões desta rodada; demais testes preservados/adaptados à ordem das colunas.
+- `perseus.py`: extração e conferência do PDF; motor preservado.
+- `classificacao.py`: aplicação da legenda oficial.
+- `regras_status_curso.json`: mapa oficial Curso → categoria.
+- `referencia.py`: `COMPETENCIA`, cores e consolidação mensal.
+- `apresentacao.py`: resumo comum e explicações de pendências.
+- `exportacao.py`: XLSX e relatório PDF executivo.
+- `pdf_alunos.py`: PDF complementar com todos os registros.
+- `app.py` + `interface/`: servidor local e interface.
+- `REGRA_STATUS_CURSO.md`: contexto de negócio que não deve se perder.
 
-Os documentos DIAGNOSTICO.md e RELATORIO_CLASSIFICACAO.md antigos são históricos. Consulte AUDITORIA_ATUAL.md para o diagnóstico desta entrega. Os PDFs digitalizados, protegidos por senha ou com layout diferente não foram homologados; não há OCR. O fluxo padrão processa integralmente o primeiro bloco contíguo, sem somar os blocos históricos do restante do arquivo.
+Os documentos `DIAGNOSTICO.md` e `RELATORIO_CLASSIFICACAO.md` são históricos. PDFs digitalizados, protegidos por senha ou com layout diferente não foram homologados; não há OCR. O fluxo padrão processa o primeiro bloco contíguo do relatório.
