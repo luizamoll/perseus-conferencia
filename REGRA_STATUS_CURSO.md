@@ -2,26 +2,38 @@
 
 Este documento registra a regra empresarial usada pelo Perseus sem alterar o motor de extração do PDF.
 
-## Duas fontes, sem misturar evidência
+## Três camadas, sem misturar evidência
 
-### 1. Legenda oficial
+### 1. Regra de negócio confirmada
 
-`regras_status_curso.json` é a transcrição da aba `Legenda_Cursos_Status` de **Fatura Perseus - SET 1.xlsx**.
+Fatos confirmados diretamente pela área têm prioridade e ficam em `biblioteca/mapeamentos_operacionais.json` dentro de `confirmados_negocio`.
 
-### 2. Biblioteca operacional
+Confirmados em 08/09/2026:
 
-`biblioteca/mapeamentos_operacionais.json` guarda exceções observadas e confirmadas pelos quadros mensais da própria planilha mestre. Ela existe porque a legenda e o processo operacional não são idênticos em todos os casos.
+- `LPI` = Licenciatura → **GRADUAÇÃO**
+- `TEOC` = Graduação → **GRADUAÇÃO**
+- `EFB` = Bacharelado → **GRADUAÇÃO**
+- `PCG` = Pós → **POS**
+- `DI` significa vínculo de compra de **disciplina isolada**, por exemplo uma matéria como Lógica de Programação. DI não deve ser interpretado apenas como uma sigla genérica de nível acadêmico.
 
-Exemplo central: a legenda traz `CIB → DI`, porém agosto e setembro classificam operacionalmente CIB como **Graduação**. O sistema preserva as duas informações e usa a biblioteca para reproduzir a Referência operacional.
+### 2. Legenda oficial
+
+`regras_status_curso.json` é a transcrição da aba `Legenda_Cursos_Status` de **Fatura Perseus - SET 1.xlsx**. Ela continua preservada como fonte documental.
+
+### 3. Compatibilidade histórica
+
+A própria planilha mestre usa classificações que nem sempre coincidem com a legenda. Essas regras ficam isoladas em `mapeamentos_historicos_compatibilidade` e `combinacoes_historicas_compatibilidade`.
+
+Exemplo central: a legenda traz `CIB → DI`, porém os quadros históricos de agosto e setembro classificam operacionalmente CIB como **Graduação**. Como o significado empresarial de DI foi esclarecido, CIB não é tratado como verdade empresarial: permanece uma exceção histórica até a regra específica de CIB ser confirmada.
 
 ## Precedência
 
-1. combinação exata registrada na biblioteca;
-2. mapeamento de sigla registrado na biblioteca;
-3. legenda oficial;
-4. sigla ausente nas duas fontes → pendência.
+1. regra de negócio confirmada;
+2. legenda oficial;
+3. compatibilidade histórica necessária para reproduzir referências antigas;
+4. sem base segura → pendência explícita.
 
-A biblioteca não modifica `regras_status_curso.json`.
+Combinações históricas exatas continuam registradas separadamente para explicar como os quadros antigos foram obtidos, mas não devem ser confundidas com regra empresarial confirmada.
 
 ## Regras de um registro
 
@@ -33,13 +45,18 @@ A biblioteca não modifica `regras_status_curso.json`.
 - Se nenhuma sigla tiver categoria conhecida, recebe `NÃO LOCALIZADO` e `REVISAR`.
 - Nenhum aluno é criado, removido ou duplicado para fechar totais.
 
-## Exceções operacionais que reproduzem agosto/setembro
+## Pendências reais conhecidas
 
-Siglas:
+- `SETRA` → significado e categoria ainda não confirmados.
+- `15` → valor encontrado no campo Curso; precisa ser investigado porque pode ser código indevido ou dado deslocado.
+
+`LPI` e `PCG` não são mais pendências: agora possuem regra de negócio confirmada.
+
+## Compatibilidade histórica que reproduz agosto/setembro
+
+Siglas históricas:
 
 - CIB → GRADUAÇÃO
-- TEOC → GRADUAÇÃO
-- EFB → GRADUAÇÃO
 - GECOO → GRADUAÇÃO
 - GEQUA → POS
 - EFL → GRADUAÇÃO
@@ -49,19 +66,13 @@ Siglas:
 - LEPOL → GRADUAÇÃO
 - QUIM → GRADUAÇÃO
 
-Combinações exatas:
+Combinações históricas exatas:
 
 - ESGSC + PSO → GRADUAÇÃO
 - DIREM + MBAAD → GRADUAÇÃO
 - DA + DIR → GRADUAÇÃO
 
-Exemplos:
-
-- `CIB` → GRADUAÇÃO pela biblioteca, mantendo DI como `categoria_legenda` na auditoria.
-- `CEXT, CIB` → MÚLTIPLAS CATEGORIAS.
-- `ESGSC, PSO` → GRADUAÇÃO pela exceção de combinação.
-- `15, CEXT, CSAP, GN` → DI + REVISAR; `15` entra na biblioteca de pendências.
-- `LPI` → NÃO LOCALIZADO + REVISAR.
+Esses itens servem para explicar/reproduzir referências antigas. Eles não têm o mesmo grau de autoridade das regras confirmadas pela área.
 
 ## Biblioteca persistente
 
@@ -84,11 +95,34 @@ Para 2026, a nomenclatura observada segue `Fatura_Final_Ref_<Mês>_2026`, com se
 - Agosto `#C04F15`
 - Setembro `#E59EDD`
 
-## Totais de controle
+## Referência histórica x regra atual
 
-A consolidação validada reproduz a planilha:
+A planilha histórica de setembro fecha em:
 
-- Agosto: 883 GRADUAÇÃO, 324 MESTRADO, 617 DI, 10 MBA, 13 POS, 0 CURSO LIVRE, 15 APERFEIÇOAMENTO, 2 NÃO LOCALIZADO, 186 MÚLTIPLAS CATEGORIAS = **2.050**.
-- Setembro: 945 GRADUAÇÃO, 325 MESTRADO, 710 DI, 10 MBA, 13 POS, 0 CURSO LIVRE, 15 APERFEIÇOAMENTO, 4 NÃO LOCALIZADO, 189 MÚLTIPLAS CATEGORIAS = **2.211**.
+- 945 GRADUAÇÃO
+- 325 MESTRADO
+- 710 DI
+- 10 MBA
+- 13 POS
+- 0 CURSO LIVRE
+- 15 APERFEIÇOAMENTO
+- 4 NÃO LOCALIZADO
+- 189 MÚLTIPLAS CATEGORIAS
+- total **2.211**
+
+Depois dos novos esclarecimentos empresariais, `LPI` passa de NÃO LOCALIZADO para GRADUAÇÃO (2 alunos) e `PCG` passa de NÃO LOCALIZADO para POS (1 aluno). Portanto, mantendo todas as demais compatibilidades históricas apenas para comparação, a classificação atual esperada de setembro passa a:
+
+- **947 GRADUAÇÃO**
+- 325 MESTRADO
+- 710 DI
+- 10 MBA
+- **14 POS**
+- 0 CURSO LIVRE
+- 15 APERFEIÇOAMENTO
+- **1 NÃO LOCALIZADO** (`SETRA`)
+- 189 MÚLTIPLAS CATEGORIAS
+- total **2.211**
+
+O valor `15` continua sendo uma pendência de qualidade de dado, mas no registro em que aparece junto de `CEXT, CSAP, GN` as siglas conhecidas sustentam DI, então ele não aumenta o total de NÃO LOCALIZADO.
 
 Esses totais de classificação não alteram a conferência do PDF. Setembro continua com 2.213 informados e 2.211 extraídos.
