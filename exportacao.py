@@ -127,7 +127,7 @@ def salvar_excel(resultado,caminho):
     linhas += [
         ('COMPETENCIA',classificacao.get('competencia_operacional','')),
         ('Fonte do STATUS_CURSO',(classificacao.get('fontes') or [''])[0]),
-        ('Como interpretar','STATUS_CURSO segue a legenda oficial. Cursos não localizados permanecem visíveis para revisão.'),
+        ('Como interpretar','STATUS_CURSO segue a legenda oficial com a biblioteca operacional de divergências. Siglas ainda sem mapeamento permanecem visíveis para revisão.'),
         ('Escopo',meta.get('escopo','Primeiro bloco contíguo do relatório')),
         ('Natureza da planilha','Retrato editável desta execução. Alterar células não refaz a conferência do PDF.'),
         ('Execução',meta.get('execucao','Sem identificador de execução')),
@@ -241,7 +241,7 @@ def salvar_pdf(resultado,caminho):
     story += [
         Spacer(1,10),
         para('Escopo: '+meta.get('escopo','Primeiro bloco contíguo do relatório')),
-        para('STATUS_CURSO calculado pela legenda oficial; cursos não localizados permanecem para revisão.'),
+        para('STATUS_CURSO calculado pela legenda oficial + biblioteca operacional; siglas ainda sem mapeamento permanecem para revisão.'),
         para('Execução: '+meta.get('execucao','Não registrada')+' | Processado em (UTC): '+meta.get('processado_em','Não registrado')),
         para('SHA-256 do PDF: '+meta['sha256'])
     ]
