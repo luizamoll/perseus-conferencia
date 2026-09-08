@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from classificacao import carregar_regras, classificar_registro, classificar_resultado, salvar_auditoria
+from referencia import CORES_REFERENCIA
 
 
 class ClassificacaoTests(unittest.TestCase):
@@ -82,12 +83,15 @@ class ClassificacaoTests(unittest.TestCase):
         a=classificar_resultado(resultado,self.regras)
         self.assertEqual(a["competencia_operacional"],"Fatura_Final_Ref_Setembro")
         self.assertEqual(a["referencia"]["titulo"],"Referência Setembro")
-        self.assertEqual(a["referencia"]["cor"],"D9AAD4")
+        self.assertEqual(a["referencia"]["cor"],"E59EDD")
         contagem={i["categoria"]:i["quantidade"] for i in a["consolidacao"]}
         self.assertEqual(contagem["DI"],1)
         self.assertEqual(contagem["MÚLTIPLAS CATEGORIAS"],1)
         self.assertEqual(contagem["NÃO LOCALIZADO"],1)
         self.assertEqual(sum(contagem.values()),3)
+
+    def test_cores_referencia_iguais_a_planilha(self):
+        self.assertEqual(CORES_REFERENCIA,{2:"C2F1C8",3:"FBE3D6",4:"F9F9F9",5:"C2F1C8",6:"F2AA84",7:"F9F9F9",8:"C04F15",9:"E59EDD"})
 
     def test_auditoria_roundtrip(self):
         a=classificar_resultado({"registros":[{"Curso":"=X"}],"metadados":{}},self.regras)
