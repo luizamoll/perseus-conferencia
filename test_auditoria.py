@@ -93,7 +93,7 @@ class AuditoriaTests(unittest.TestCase):
             values=dict(zip(headers,[c.value for c in w['Alunos'][2]]))
             for k in CAMPOS:self.assertEqual(values[k],r['registros'][0][k])
             self.assertEqual(w.sheetnames,['Resumo','Referência','Alunos','Divergências'])
-            self.assertEqual(values['STATUS_CURSO'],'GRADUAÇÃO')
+            self.assertEqual(values['STATUS_CURSO'],'MÚLTIPLAS CATEGORIAS')
             self.assertTrue(values['COMPETENCIA'])
             self.assertTrue(all(ws.freeze_panes and ws.auto_filter.ref and not ws.merged_cells for ws in w))
             self.assertTrue((Path(d)/'out'/nome_pdf(r)).exists())
