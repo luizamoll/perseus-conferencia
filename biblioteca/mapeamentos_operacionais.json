@@ -1,11 +1,22 @@
 {
-  "versao": "referencias_agosto_setembro_2026",
-  "fonte": "Fatura Perseus - SET 1.xlsx / Fatura_Final_Ref_Agosto_2026 e Fatura_Final_Ref_Setembro",
-  "descricao": "Camada operacional de compatibilidade para reproduzir os quadros de Referência validados sem apagar a legenda oficial.",
-  "mapeamentos_siglas": {
-    "CIB": "GRADUAÇÃO",
+  "versao": "reorganizacao_negocio_2026-09-08",
+  "fonte": "Regras de negócio confirmadas + referências operacionais de agosto/setembro de 2026",
+  "descricao": "Separa conhecimento confirmado pela área, compatibilidade histórica e pendências reais. A legenda oficial continua preservada em regras_status_curso.json.",
+  "confirmados_negocio": {
+    "LPI": "GRADUAÇÃO",
     "TEOC": "GRADUAÇÃO",
     "EFB": "GRADUAÇÃO",
+    "PCG": "POS"
+  },
+  "significados_confirmados": {
+    "LPI": "Licenciatura",
+    "TEOC": "Graduação",
+    "EFB": "Bacharelado",
+    "PCG": "Pós",
+    "DI": "Vínculo de compra de disciplina isolada, por exemplo uma matéria como Lógica de Programação"
+  },
+  "mapeamentos_historicos_compatibilidade": {
+    "CIB": "GRADUAÇÃO",
     "GECOO": "GRADUAÇÃO",
     "GEQUA": "POS",
     "EFL": "GRADUAÇÃO",
@@ -15,13 +26,18 @@
     "LEPOL": "GRADUAÇÃO",
     "QUIM": "GRADUAÇÃO"
   },
-  "combinacoes_exatas": {
+  "combinacoes_historicas_compatibilidade": {
     "ESGSC|PSO": "GRADUAÇÃO",
     "DIREM|MBAAD": "GRADUAÇÃO",
     "DA|DIR": "GRADUAÇÃO"
   },
+  "pendencias_conhecidas": {
+    "SETRA": "Significado e categoria ainda não confirmados",
+    "15": "Valor encontrado no campo Curso; pode ser código indevido ou dado deslocado e precisa de investigação"
+  },
   "observacoes": {
-    "CIB": "A legenda oficial informa DI, porém os quadros operacionais de agosto e setembro classificam CIB como Graduação. A exceção fica isolada nesta biblioteca e não altera a legenda oficial.",
-    "nao_localizados": "Siglas sem mapeamento em nenhuma das duas fontes permanecem registradas para revisão. Se um registro contém ao menos uma sigla conhecida, a categoria pode ser determinada pelas siglas conhecidas, mas a sigla ausente continua na biblioteca de pendências."
+    "CIB": "A legenda oficial informa DI, mas os quadros históricos de agosto e setembro classificam CIB como Graduação. Como DI foi esclarecido como vínculo de disciplina isolada, CIB permanece apenas como exceção histórica de compatibilidade até a regra de negócio específica ser confirmada.",
+    "prioridade": "1) regra de negócio confirmada; 2) legenda oficial; 3) compatibilidade histórica quando necessária para reproduzir referências antigas; 4) pendência explícita quando não houver base segura.",
+    "privacidade": "A biblioteca persistente guarda regras, siglas e contagens, nunca nomes ou identificadores de alunos."
   }
 }
