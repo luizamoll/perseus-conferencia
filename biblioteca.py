@@ -1,4 +1,4 @@
-"""Biblioteca persistente de regras confirmadas, compatibilidade histórica e siglas não localizadas."""
+"""Biblioteca persistente de regras confirmadas, compatibilidade histórica e cursos sem regra final."""
 from __future__ import annotations
 
 from collections import Counter
@@ -26,6 +26,11 @@ def usar_compatibilidade_historica(competencia, biblioteca=None):
     return competencia in set(biblioteca.get("competencias_historicas_compatibilidade", []))
 
 
+def curso_reconhecido_sem_regra_status(curso, biblioteca=None):
+    biblioteca = carregar_biblioteca() if biblioteca is None else biblioteca
+    return curso in biblioteca.get("codigos_curso_confirmados_sem_regra_status", {})
+
+
 def origem_biblioteca(curso, biblioteca=None, permitir_historico=False):
     biblioteca = carregar_biblioteca() if biblioteca is None else biblioteca
     if curso in biblioteca.get("confirmados_negocio", {}):
@@ -34,6 +39,8 @@ def origem_biblioteca(curso, biblioteca=None, permitir_historico=False):
         return "compatibilidade_historica"
     if permitir_historico and curso in biblioteca.get("mapeamentos_siglas", {}):
         return "biblioteca_legada"
+    if curso_reconhecido_sem_regra_status(curso, biblioteca):
+        return "curso_confirmado_sem_regra_status"
     return None
 
 
@@ -65,6 +72,7 @@ def combinacao_biblioteca(cursos, biblioteca=None, permitir_historico=False):
 def resumo_execucao(auditoria, biblioteca=None):
     biblioteca = carregar_biblioteca() if biblioteca is None else biblioteca
     desconhecidas = Counter()
+    sem_regra_status = Counter()
     confirmadas = Counter()
     historicas = Counter()
     combinacoes = Counter()
@@ -76,7 +84,9 @@ def resumo_execucao(auditoria, biblioteca=None):
                 confirmadas[sigla] += 1
             elif origem in {"compatibilidade_historica", "biblioteca_legada"}:
                 historicas[sigla] += 1
-            if curso.get("categoria") is None and sigla:
+            elif origem == "curso_confirmado_sem_regra_status":
+                sem_regra_status[sigla] += 1
+            if curso.get("categoria") is None and sigla and origem != "curso_confirmado_sem_regra_status":
                 desconhecidas[sigla] += 1
         if item.get("fonte_categoria_final") == "biblioteca_combinacao":
             combinacoes[chave_combinacao(item.get("cursos_lista", []))] += 1
@@ -88,6 +98,9 @@ def resumo_execucao(auditoria, biblioteca=None):
         ],
         "excecoes_historicas_usadas": [
             {"sigla": sigla, "ocorrencias": qtd} for sigla, qtd in sorted(historicas.items())
+        ],
+        "cursos_confirmados_sem_regra_status": [
+            {"sigla": sigla, "ocorrencias": qtd} for sigla, qtd in sorted(sem_regra_status.items())
         ],
         "siglas_operacionais_usadas": [
             {"sigla": sigla, "ocorrencias": qtd}
