@@ -43,7 +43,7 @@ class AuditoriaTests(unittest.TestCase):
         self.assertIn('Tabela 1',d['Localização/origem']);self.assertTrue(d['Aluno'])
 
     def test_review_counts_unique_records_not_reasons(self):
-        row=list(ROW);row[1]='SETRA';row[3]='';row[4]=''
+        row=list(ROW);row[1]='ZZZ';row[3]='';row[4]=''
         r=self.resultado([row]);summary=resumo_resultado(r)[0]
         self.assertEqual(summary['Registros para revisão'],1)
         self.assertGreater(len(r['revisao']),1)
@@ -118,7 +118,7 @@ class AuditoriaTests(unittest.TestCase):
 
     def test_biblioteca_operacional_separa_confirmado_de_historico(self):
         from classificacao import classificar_registro
-        confirmados={'TEOC':'GRADUAÇÃO','LPI':'GRADUAÇÃO','EFB':'GRADUAÇÃO','PCG':'POS'}
+        confirmados={'TEOC':'GRADUAÇÃO','LPI':'GRADUAÇÃO','EFB':'GRADUAÇÃO','PCG':'POS','SETRA':'GRADUAÇÃO'}
         for course,categoria in confirmados.items():
             a=classificar_registro({'Curso':course});self.assertEqual(a['categoria_final'],categoria);self.assertEqual(a['status_final'],'CLASSIFICADO')
         historicos={
@@ -128,7 +128,7 @@ class AuditoriaTests(unittest.TestCase):
         for course,categoria in historicos.items():
             a=classificar_registro({'Curso':course},permitir_historico=True);self.assertEqual(a['categoria_final'],categoria);self.assertEqual(a['status_final'],'CLASSIFICADO')
         self.assertEqual(classificar_registro({'Curso':'CIB'})['categoria_final'],'DI')
-        a=classificar_registro({'Curso':'SETRA'});self.assertEqual(a['categoria_final'],'NÃO LOCALIZADO');self.assertEqual(a['status_final'],'REVISAR')
+        a=classificar_registro({'Curso':'ZZZ'});self.assertEqual(a['categoria_final'],'NÃO LOCALIZADO');self.assertEqual(a['status_final'],'REVISAR')
         self.assertTrue(all(motivo_humano(m) for m in a['motivos_revisao']))
         a=classificar_registro({'Curso':'15, CEXT, CSAP, GN'})
         self.assertEqual(a['categoria_final'],'DI');self.assertEqual(a['status_final'],'REVISAR')
