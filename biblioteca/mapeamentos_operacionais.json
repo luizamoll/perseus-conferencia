@@ -1,18 +1,22 @@
 {
-  "versao": "reorganizacao_negocio_2026-09-08_v2",
+  "versao": "reorganizacao_negocio_2026-09-11_v3",
   "fonte": "Regras de negócio confirmadas + referências operacionais de agosto/setembro de 2026",
   "descricao": "Separa conhecimento confirmado pela área, compatibilidade histórica e pendências reais. A legenda oficial continua preservada em regras_status_curso.json.",
   "confirmados_negocio": {
     "LPI": "GRADUAÇÃO",
     "TEOC": "GRADUAÇÃO",
     "EFB": "GRADUAÇÃO",
-    "PCG": "POS"
+    "PCG": "POS",
+    "SETRA": "GRADUAÇÃO",
+    "15": "MBA"
   },
   "significados_confirmados": {
     "LPI": "Licenciatura",
     "TEOC": "Graduação",
     "EFB": "Bacharelado",
     "PCG": "Pós",
+    "SETRA": "Graduação em Segurança do Trabalho",
+    "15": "MBA Gestão de trans",
     "DI": "Vínculo de compra de disciplina isolada, por exemplo uma matéria como Lógica de Programação"
   },
   "competencias_historicas_compatibilidade": [
@@ -35,12 +39,11 @@
     "DIREM|MBAAD": "GRADUAÇÃO",
     "DA|DIR": "GRADUAÇÃO"
   },
-  "pendencias_conhecidas": {
-    "SETRA": "Significado e categoria ainda não confirmados.",
-    "15": "Valor confirmado como existente na coluna Curso. Significado e categoria ainda não confirmados; verificar com a pessoa responsável pela lista."
-  },
+  "pendencias_conhecidas": {},
   "observacoes": {
     "CIB": "A legenda oficial informa DI, mas os quadros históricos de agosto e setembro classificam CIB como Graduação. Como DI foi esclarecido como vínculo de disciplina isolada, CIB permanece apenas como compatibilidade histórica para essas competências até a regra de negócio específica ser confirmada.",
+    "15": "O valor 15 foi confirmado como curso MBA. No registro de Matheus Teodoro Pereira ele aparece junto de CEXT, CSAP e GN, portanto o registro passa a MÚLTIPLAS CATEGORIAS.",
+    "SETRA": "Confirmado como Graduação em Segurança do Trabalho.",
     "prioridade": "1) regra de negócio confirmada; 2) legenda oficial; 3) compatibilidade histórica somente nas competências explicitamente registradas; 4) pendência explícita quando não houver base segura.",
     "privacidade": "A biblioteca persistente guarda regras, siglas e contagens, nunca nomes ou identificadores de alunos."
   }
