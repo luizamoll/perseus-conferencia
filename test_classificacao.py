@@ -41,6 +41,15 @@ class ClassificacaoTests(unittest.TestCase):
         self.assertEqual(self.classify("PCG")["categoria_final"],"POS")
         self.assertEqual(self.classify("SETRA")["categoria_final"],"GRADUAÇÃO")
 
+    def test_15_e_codigo_real_sem_regra_status(self):
+        self.assertEqual(origem_biblioteca("15",self.biblioteca),"curso_confirmado_sem_regra_status")
+        a=self.classify("15, CEXT, CSAP, GN")
+        self.assertEqual(a["categoria_final"],"DI")
+        self.assertEqual(a["status_final"],"REVISAR")
+        self.assertEqual(a["siglas_nao_localizadas"],[])
+        self.assertEqual(a["cursos_sem_regra_status"],["15"])
+        self.assertTrue(any("sem regra final" in m for m in a["motivos_revisao"]))
+
     def test_cib_historico_nao_vira_regra_futura(self):
         self.assertEqual(self.regras["siglas"]["CIB"],"DI")
         self.assertEqual(self.biblioteca["mapeamentos_historicos_compatibilidade"]["CIB"],"GRADUAÇÃO")
@@ -80,14 +89,10 @@ class ClassificacaoTests(unittest.TestCase):
                 self.assertEqual(a["categoria_final"],"MÚLTIPLAS CATEGORIAS")
                 self.assertEqual(a["status_final"],"CLASSIFICADO")
 
-    def test_setra_confirmado_e_15_pendente(self):
+    def test_setra_confirmado(self):
         a=self.classify("SETRA")
         self.assertEqual(a["categoria_final"],"GRADUAÇÃO")
         self.assertEqual(a["status_final"],"CLASSIFICADO")
-        a=self.classify("15, CEXT, CSAP, GN")
-        self.assertEqual(a["categoria_final"],"DI")
-        self.assertEqual(a["status_final"],"REVISAR")
-        self.assertEqual(a["siglas_nao_localizadas"],["15"])
 
     def test_sem_substring_ou_delimitador_inventado(self):
         for curso in ["XXDIR","DIR EVE","DIR/EVE","DIR;EVE"]:
@@ -110,6 +115,7 @@ class ClassificacaoTests(unittest.TestCase):
         rows=[{"Identificador":"01","Curso":"DIR"},{"Identificador":"01","Curso":"MEST"}]
         a=classificar_resultado({"registros":rows,"metadados":{}},self.regras,self.biblioteca)
         self.assertEqual([r["categoria_final"] for r in a["auditoria"]],["GRADUAÇÃO","MESTRADO"])
+        self.assertEqual(a["status_classificacao"],"PROVISORIA_ENQUANTO_CALCULO_EMPRESARIAL_PENDENTE")
 
     def test_setembro_usa_compatibilidade_historica(self):
         resultado={
@@ -125,7 +131,9 @@ class ClassificacaoTests(unittest.TestCase):
         self.assertEqual(contagem["MÚLTIPLAS CATEGORIAS"],1)
         self.assertEqual(contagem["NÃO LOCALIZADO"],0)
         nao={i["sigla"]:i["ocorrencias"] for i in a["biblioteca"]["siglas_nao_localizadas"]}
-        self.assertEqual(nao,{"15":1})
+        self.assertEqual(nao,{})
+        sem_regra={i["sigla"]:i["ocorrencias"] for i in a["biblioteca"]["cursos_confirmados_sem_regra_status"]}
+        self.assertEqual(sem_regra,{"15":1})
 
     def test_competencia_futura_nao_herda_historico(self):
         resultado={
@@ -139,15 +147,15 @@ class ClassificacaoTests(unittest.TestCase):
     def test_cores_referencia_iguais_a_planilha(self):
         self.assertEqual(CORES_REFERENCIA,{2:"C2F1C8",3:"FBE3D6",4:"F9F9F9",5:"C2F1C8",6:"F2AA84",7:"F9F9F9",8:"C04F15",9:"E59EDD"})
 
-    def test_registro_local_da_biblioteca_acumula_so_siglas(self):
-        resumo={"siglas_nao_localizadas":[{"sigla":"15","ocorrencias":2},{"sigla":"ZZZ","ocorrencias":1}]}
+    def test_registro_local_da_biblioteca_acumula_so_siglas_realmente_desconhecidas(self):
+        resumo={"siglas_nao_localizadas":[{"sigla":"ZZZ","ocorrencias":2}]}
         with tempfile.TemporaryDirectory() as d:
             caminho=Path(d)/"nao_localizados.json"
             registrar_nao_localizados(resumo,"Fatura_Final_Ref_Setembro",caminho)
-            registrar_nao_localizados({"siglas_nao_localizadas":[{"sigla":"15","ocorrencias":1}]},"Fatura_Final_Ref_Outubro_2026",caminho)
+            registrar_nao_localizados({"siglas_nao_localizadas":[{"sigla":"ZZZ","ocorrencias":1}]},"Fatura_Final_Ref_Outubro_2026",caminho)
             dados=json.loads(caminho.read_text())
-            self.assertEqual(dados["siglas"]["15"]["ocorrencias_acumuladas"],3)
-            self.assertEqual(dados["siglas"]["15"]["ultima_competencia"],"Fatura_Final_Ref_Outubro_2026")
+            self.assertEqual(dados["siglas"]["ZZZ"]["ocorrencias_acumuladas"],3)
+            self.assertEqual(dados["siglas"]["ZZZ"]["ultima_competencia"],"Fatura_Final_Ref_Outubro_2026")
             self.assertNotIn("Aluno",caminho.read_text())
 
     def test_auditoria_roundtrip(self):
