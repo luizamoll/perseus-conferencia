@@ -34,7 +34,7 @@ class ApplicationTests(unittest.TestCase):
     def test_todas_pendencias_disponiveis_para_interface(self):
         rows=[]
         for i in range(15):
-            row=list(fixtures.ROW);row[0]=f'Pessoa fictícia({i:04d})';row[1]='SETRA';rows.append(row)
+            row=list(fixtures.ROW);row[0]=f'Pessoa fictícia({i:04d})';row[1]='ZZZ';rows.append(row)
         r=fixtures.ExtractionTests().run_pdf([fixtures.Page(rows)])
         with tempfile.TemporaryDirectory() as d:
             job={'arquivo':'teste.pdf'}
@@ -74,7 +74,7 @@ class ApplicationTests(unittest.TestCase):
         import copy
         from openpyxl import load_workbook
         curso_rows=[]
-        for curso in ['DIR','CEXT, CHU, GN','CIB','SETRA']:
+        for curso in ['DIR','CEXT, CHU, GN','CIB','ZZZ']:
             row=list(fixtures.ROW);row[1]=curso;curso_rows.append(row)
         resultado=fixtures.ExtractionTests().run_pdf([fixtures.Page(curso_rows)])
         antes=copy.deepcopy(resultado['registros'])
@@ -99,7 +99,7 @@ class ApplicationTests(unittest.TestCase):
             self.assertEqual(saved['registros'],antes)
             self.assertEqual(len(saved['classificacao']['auditoria']),4)
             biblioteca=json.loads((Path(d)/'resultado/biblioteca_divergencias.json').read_text())
-            self.assertEqual(biblioteca['siglas_nao_localizadas'],[{'sigla':'SETRA','ocorrencias':1}])
+            self.assertEqual(biblioteca['siglas_nao_localizadas'],[{'sigla':'ZZZ','ocorrencias':1}])
 
     def test_excel_recusa_classificacao_desalinhada(self):
         from classificacao import classificar_resultado
