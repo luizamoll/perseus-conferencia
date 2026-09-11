@@ -1,4 +1,8 @@
-"""Classificação operacional de STATUS_CURSO com legenda + biblioteca de divergências."""
+"""Classificação operacional de STATUS_CURSO com legenda + biblioteca de divergências.
+
+A classificação por legenda/biblioteca é provisória enquanto o cálculo empresarial
+completo da situação do aluno não estiver reconstruído.
+"""
 import argparse
 import copy
 import csv
@@ -10,6 +14,7 @@ from biblioteca import (
     carregar_biblioteca,
     categoria_biblioteca,
     combinacao_biblioteca,
+    curso_reconhecido_sem_regra_status,
     origem_biblioteca,
     resumo_execucao,
     usar_compatibilidade_historica,
@@ -60,7 +65,7 @@ def classificar_registro(registro, regras=None, biblioteca=None, permitir_histor
     biblioteca = carregar_biblioteca() if biblioteca is None else biblioteca
     original = registro.get("Curso")
     cursos = cursos_do_registro(original)
-    motivos, mapeados, desconhecidos = [], [], []
+    motivos, mapeados, desconhecidos, sem_regra_status = [], [], [], []
 
     if not cursos or any(not curso for curso in cursos):
         motivos.append("Curso ausente, inválido ou item vazio")
@@ -79,8 +84,14 @@ def classificar_registro(registro, regras=None, biblioteca=None, permitir_histor
             categoria = categoria_legenda
             fonte = "legenda" if categoria_legenda else None
         if categoria is None:
-            desconhecidos.append(curso)
-            motivos.append("Curso não localizado na legenda nem nas regras confirmadas: " + curso)
+            if curso_reconhecido_sem_regra_status(curso, biblioteca):
+                sem_regra_status.append(curso)
+                motivos.append(
+                    "Código de curso reconhecido, mas sem regra final de STATUS_CURSO: " + curso
+                )
+            else:
+                desconhecidos.append(curso)
+                motivos.append("Curso não localizado na legenda nem nas regras confirmadas: " + curso)
         mapeados.append({
             "curso": curso,
             "categoria": categoria,
@@ -90,6 +101,7 @@ def classificar_registro(registro, regras=None, biblioteca=None, permitir_histor
             "referencia_regra": (
                 "biblioteca.confirmados_negocio." + curso if origem_excecao == "negocio_confirmado" else
                 "biblioteca.compatibilidade_historica." + curso if origem_excecao in {"compatibilidade_historica", "biblioteca_legada"} else
+                "biblioteca.codigos_curso_confirmados_sem_regra_status." + curso if origem_excecao == "curso_confirmado_sem_regra_status" else
                 "Legenda_Cursos_Status." + curso if fonte == "legenda" else None
             ),
         })
@@ -114,8 +126,8 @@ def classificar_registro(registro, regras=None, biblioteca=None, permitir_histor
         categoria_final = "NÃO LOCALIZADO"
         fonte_final = "sem_mapeamento"
 
-    # Uma sigla desconhecida não apaga a categoria sustentada pelas demais siglas,
-    # mas continua visível para revisão e entra na biblioteca local de divergências.
+    # Um curso sem regra final não apaga a categoria sustentada pelos demais códigos,
+    # mas o registro continua em revisão até o cálculo empresarial ser reconstruído.
     status_final = "REVISAR" if motivos else "CLASSIFICADO"
     if not cursos_validos:
         categoria_final = "NÃO LOCALIZADO"
@@ -132,6 +144,7 @@ def classificar_registro(registro, regras=None, biblioteca=None, permitir_histor
         "status_final": status_final,
         "motivos_revisao": list(dict.fromkeys(motivos)),
         "siglas_nao_localizadas": list(dict.fromkeys(desconhecidos)),
+        "cursos_sem_regra_status": list(dict.fromkeys(sem_regra_status)),
     }
 
 
@@ -152,6 +165,7 @@ def classificar_resultado(resultado, regras=None, biblioteca=None):
         "versao_regras": regras["versao"],
         "versao_biblioteca": biblioteca.get("versao", ""),
         "fontes": [regras.get("fonte", "Legenda_Cursos_Status"), biblioteca.get("fonte", "Biblioteca operacional")],
+        "status_classificacao": "PROVISORIA_ENQUANTO_CALCULO_EMPRESARIAL_PENDENTE",
         "sha256_regras": hashlib.sha256(
             json.dumps(regras, ensure_ascii=False, sort_keys=True).encode("utf-8")
         ).hexdigest(),
