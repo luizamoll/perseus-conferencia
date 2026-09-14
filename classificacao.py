@@ -85,10 +85,9 @@ def classificar_registro(registro, regras=None, biblioteca=None, permitir_histor
             fonte = "legenda" if categoria_legenda else None
         if categoria is None:
             if curso_reconhecido_sem_regra_status(curso, biblioteca):
+                # É um código real conhecido. Ele só vira divergência se, sozinho,
+                # não houver nenhuma categoria sustentada pelos demais códigos do registro.
                 sem_regra_status.append(curso)
-                motivos.append(
-                    "Código de curso reconhecido, mas sem regra final de STATUS_CURSO: " + curso
-                )
             else:
                 desconhecidos.append(curso)
                 motivos.append("Curso não localizado na legenda nem nas regras confirmadas: " + curso)
@@ -126,8 +125,12 @@ def classificar_registro(registro, regras=None, biblioteca=None, permitir_histor
         categoria_final = "NÃO LOCALIZADO"
         fonte_final = "sem_mapeamento"
 
-    # Um curso sem regra final não apaga a categoria sustentada pelos demais códigos,
-    # mas o registro continua em revisão até o cálculo empresarial ser reconstruído.
+    if sem_regra_status and not categorias and not override_combinacao:
+        motivos.append(
+            "Código de curso reconhecido, mas sem categoria STATUS_CURSO determinada: "
+            + ", ".join(sem_regra_status)
+        )
+
     status_final = "REVISAR" if motivos else "CLASSIFICADO"
     if not cursos_validos:
         categoria_final = "NÃO LOCALIZADO"
