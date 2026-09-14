@@ -16,6 +16,7 @@ from urllib.parse import unquote, urlparse
 from perseus import extrair, salvar
 from classificacao import classificar_resultado
 from exportacao import nome_excel, nome_pdf
+from categorias_excel import adicionar_visao_por_categoria
 from pdf_alunos import nome_pdf_alunos, salvar_pdf_alunos
 from apresentacao import divergencias, resumo_resultado
 from biblioteca import registrar_nao_localizados
@@ -48,11 +49,12 @@ def processar(job, arquivo, pasta):
         with TRAVA:
             job.update(etapa="Preparando Excel e relatórios PDF", registros=len(resultado["registros"]))
         salvar(resultado, destino)
+        excel = nome_excel(resultado)
+        adicionar_visao_por_categoria(destino / excel, resultado)
         (destino / "biblioteca_divergencias.json").write_text(
             json.dumps(biblioteca_resumo, ensure_ascii=False, indent=2), encoding="utf-8"
         )
         pdf = nome_pdf(resultado)
-        excel = nome_excel(resultado)
         pdf_alunos = nome_pdf_alunos(resultado)
         salvar_pdf_alunos(resultado, destino / pdf_alunos)
         with zipfile.ZipFile(pasta / "resultado.zip", "w", zipfile.ZIP_DEFLATED) as z:
