@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+env:
+  PYTHONUTF8: "1"
+
 jobs:
   testes:
     strategy:
