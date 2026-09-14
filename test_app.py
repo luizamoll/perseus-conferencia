@@ -85,7 +85,7 @@ class ApplicationTests(unittest.TestCase):
             self.assertEqual(job['revisoes_classificacao'],1)
             self.assertEqual(resultado['registros'],antes)
             wb=load_workbook(Path(d)/'resultado'/job['excel'])
-            self.assertEqual(wb.sheetnames,['Resumo','Referência','Alunos','Divergências'])
+            self.assertEqual(wb.sheetnames,['Resumo','Referência','Alunos','Divergências','Por Categoria'])
             rows=list(wb['Alunos'].values);headers=rows[0];data=[dict(zip(headers,row)) for row in rows[1:]]
             self.assertEqual([r['STATUS_CURSO'] for r in data],['GRADUAÇÃO','DI','GRADUAÇÃO','NÃO LOCALIZADO'])
             self.assertEqual([r['Classificação'] for r in data],['CLASSIFICADO','CLASSIFICADO','CLASSIFICADO','REVISAR'])
@@ -93,12 +93,16 @@ class ApplicationTests(unittest.TestCase):
             self.assertTrue(all(r['COMPETENCIA'] for r in data))
             ref=dict(wb['Referência'].values)
             self.assertEqual(ref['Total'],4)
+            self.assertTrue(wb['Referência']['A2'].hyperlink)
+            por_categoria=list(wb['Por Categoria'].values)
+            self.assertEqual(por_categoria[0][0],'STATUS_CURSO')
+            self.assertEqual(len(por_categoria)-1,4)
             self.assertIn('Aluno',list(wb['Divergências'].values)[0])
             self.assertEqual(wb['Alunos'].freeze_panes,'B2')
-            saved=json.loads((Path(d)/'resultado/resultado.json').read_text())
+            saved=json.loads((Path(d)/'resultado/resultado.json').read_text(encoding='utf-8'))
             self.assertEqual(saved['registros'],antes)
             self.assertEqual(len(saved['classificacao']['auditoria']),4)
-            biblioteca=json.loads((Path(d)/'resultado/biblioteca_divergencias.json').read_text())
+            biblioteca=json.loads((Path(d)/'resultado/biblioteca_divergencias.json').read_text(encoding='utf-8'))
             self.assertEqual(biblioteca['siglas_nao_localizadas'],[{'sigla':'ZZZ','ocorrencias':1}])
 
     def test_excel_recusa_classificacao_desalinhada(self):
