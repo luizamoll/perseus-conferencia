@@ -142,6 +142,24 @@ class ClassificacaoTests(unittest.TestCase):
         self.assertEqual(sem_regra,{"15":1})
         self.assertEqual(a["auditoria"][3]["status_final"],"CLASSIFICADO")
 
+    def test_siglas_conhecidas_permanecem_mapeadas_em_competencias_futuras(self):
+        esperados={
+            "ARTVI":"GRADUAÇÃO","CBIOL":"GRADUAÇÃO","EFL":"GRADUAÇÃO",
+            "GECOO":"GRADUAÇÃO","GEQUA":"POS","GESSP":"GRADUAÇÃO",
+            "LEPOL":"GRADUAÇÃO","QUIM":"GRADUAÇÃO",
+        }
+        resultado={
+            "metadados":{"competencia_fatura":"2026/10"},
+            "registros":[{"Curso":curso} for curso in esperados],
+        }
+        a=classificar_resultado(resultado,self.regras,self.biblioteca)
+        self.assertEqual(
+            [x["categoria_final"] for x in a["auditoria"]],
+            list(esperados.values()),
+        )
+        self.assertTrue(all(x["status_final"]=="CLASSIFICADO" for x in a["auditoria"]))
+        self.assertEqual(a["biblioteca"]["siglas_nao_localizadas"],[])
+
     def test_competencia_futura_nao_herda_historico(self):
         resultado={
             "metadados":{"competencia_fatura":"2026/10"},
