@@ -23,6 +23,7 @@ class ApplicationTests(unittest.TestCase):
             self.assertEqual(sum(x['quantidade'] for x in job['consolidacao']),len(r['registros']))
             with zipfile.ZipFile(Path(d)/'resultado.zip') as z:
                 self.assertIn(job['excel'],z.namelist())
+                self.assertIn(job['excel_mestre'],z.namelist())
                 self.assertIn(job['pdf'],z.namelist())
                 self.assertIn(job['pdf_alunos'],z.namelist())
                 self.assertTrue(z.read(job['pdf']).startswith(b'%PDF-'))
@@ -58,14 +59,16 @@ class ApplicationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             dest=Path(d)/'test'/'resultado';dest.mkdir(parents=True)
             (dest/'alunos.xlsx').write_bytes(b'test-xlsx')
+            (dest/'mestre.xlsx').write_bytes(b'test-master')
             (dest/'relatorio.pdf').write_bytes(b'%PDF-test')
             (dest/'lista-alunos.pdf').write_bytes(b'%PDF-alunos')
             handler=object.__new__(app.Pagina)
             handler.headers={'Host':'127.0.0.1:8876'}
             handler.server=SimpleNamespace(server_port=8876,destino=Path(d))
             responses=[];handler.responder=lambda *args:responses.append(args)
-            with patch.dict(app.TRABALHOS,{'test':{'estado':'concluido','pdf':'relatorio.pdf','pdf_alunos':'lista-alunos.pdf'}}):
+            with patch.dict(app.TRABALHOS,{'test':{'estado':'concluido','excel_mestre':'mestre.xlsx','pdf':'relatorio.pdf','pdf_alunos':'lista-alunos.pdf'}}):
                 handler.path='/download/test/alunos.xlsx';handler.do_GET();self.assertEqual(responses[-1][0],200);self.assertIn('spreadsheetml',responses[-1][2])
+                handler.path='/download/test/mestre.xlsx';handler.do_GET();self.assertEqual(responses[-1][0],200);self.assertIn('spreadsheetml',responses[-1][2])
                 handler.path='/download/test/relatorio.pdf';handler.do_GET();self.assertEqual(responses[-1][0],200);self.assertEqual(responses[-1][2],'application/pdf')
                 handler.path='/download/test/lista-alunos.pdf';handler.do_GET();self.assertEqual(responses[-1][0],200);self.assertEqual(responses[-1][2],'application/pdf')
                 handler.path='/download/test/entrada.pdf';handler.do_GET();self.assertEqual(responses[-1][0],404)
@@ -104,6 +107,30 @@ class ApplicationTests(unittest.TestCase):
             self.assertEqual(len(saved['classificacao']['auditoria']),4)
             biblioteca=json.loads((Path(d)/'resultado/biblioteca_divergencias.json').read_text(encoding='utf-8'))
             self.assertEqual(biblioteca['siglas_nao_localizadas'],[{'sigla':'ZZZ','ocorrencias':1}])
+
+    def test_excel_mestre_pronto_para_colar(self):
+        from openpyxl import load_workbook
+        rows=[]
+        for curso in ['DIR','GEQUA']:
+            row=list(fixtures.ROW);row[1]=curso;rows.append(row)
+        resultado=fixtures.ExtractionTests().run_pdf([fixtures.Page(rows)])
+        resultado['metadados']['competencia_fatura']='2026/10'
+        with tempfile.TemporaryDirectory() as d:
+            job={'arquivo':'outubro.pdf'}
+            with patch('app.extrair',return_value=resultado):
+                app.processar(job,Path(d)/'entrada.pdf',Path(d))
+            self.assertEqual(job['estado'],'concluido')
+            wb=load_workbook(Path(d)/'resultado'/job['excel_mestre'])
+            self.assertEqual(wb.sheetnames,['Fatura_Final_Ref_Outubro_2026'])
+            ws=wb.active
+            self.assertEqual(
+                [c.value for c in ws[1]],
+                ['Aluno','Curso','Data da Coleta','Status na Data da Coleta','Status Atual','Unidade','Tipo de Curso','STATUS_CURSO','COMPETENCIA']
+            )
+            dados=list(ws.values)[1:]
+            self.assertEqual([r[7] for r in dados],['GRADUAÇÃO','POS'])
+            self.assertTrue(all(r[8]=='Fatura_Final_Ref_Outubro_2026' for r in dados))
+            self.assertEqual(len(dados),2)
 
     def test_excel_recusa_classificacao_desalinhada(self):
         from classificacao import classificar_resultado
