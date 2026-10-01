@@ -69,6 +69,14 @@
     "CSAP": "DI",
     "GN": "DI",
     "TA": "APERF",
-    "EVE": "CURSO_LIVRE"
+    "EVE": "CURSO_LIVRE",
+    "ARTVI": "GRAD",
+    "CBIOL": "GRAD",
+    "EFL": "GRAD",
+    "GECOO": "GRAD",
+    "GEQUA": "POS",
+    "GESSP": "GRAD",
+    "LEPOL": "GRAD",
+    "QUIM": "GRAD"
   }
 }
