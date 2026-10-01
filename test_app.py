@@ -115,6 +115,8 @@ class ApplicationTests(unittest.TestCase):
             row=list(fixtures.ROW);row[1]=curso;rows.append(row)
         resultado=fixtures.ExtractionTests().run_pdf([fixtures.Page(rows)])
         resultado['metadados']['competencia_fatura']='2026/10'
+        for registro in resultado['registros']:
+            registro['Competência da fatura']='2026/10'
         with tempfile.TemporaryDirectory() as d:
             job={'arquivo':'outubro.pdf'}
             with patch('app.extrair',return_value=resultado):
