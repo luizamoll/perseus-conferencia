@@ -131,7 +131,7 @@ class AuditoriaTests(unittest.TestCase):
         a=classificar_registro({'Curso':'ZZZ'});self.assertEqual(a['categoria_final'],'NÃO LOCALIZADO');self.assertEqual(a['status_final'],'REVISAR')
         self.assertTrue(all(motivo_humano(m) for m in a['motivos_revisao']))
         a=classificar_registro({'Curso':'15, CEXT, CSAP, GN'})
-        self.assertEqual(a['categoria_final'],'DI');self.assertEqual(a['status_final'],'REVISAR')
+        self.assertEqual(a['categoria_final'],'DI');self.assertEqual(a['status_final'],'CLASSIFICADO')
 
 
 if __name__=='__main__':
