@@ -15,7 +15,7 @@ from urllib.parse import unquote, urlparse
 
 from perseus import extrair, salvar
 from classificacao import classificar_resultado
-from exportacao import nome_excel, nome_pdf
+from exportacao import nome_excel, nome_pdf, nome_excel_mestre, salvar_excel_mestre
 from categorias_excel import adicionar_visao_por_categoria
 from pdf_alunos import nome_pdf_alunos, salvar_pdf_alunos
 from apresentacao import divergencias, resumo_resultado
@@ -51,6 +51,8 @@ def processar(job, arquivo, pasta):
         salvar(resultado, destino)
         excel = nome_excel(resultado)
         adicionar_visao_por_categoria(destino / excel, resultado)
+        excel_mestre = nome_excel_mestre(resultado)
+        salvar_excel_mestre(resultado, destino / excel_mestre)
         (destino / "biblioteca_divergencias.json").write_text(
             json.dumps(biblioteca_resumo, ensure_ascii=False, indent=2), encoding="utf-8"
         )
@@ -68,6 +70,7 @@ def processar(job, arquivo, pasta):
                 conferencia=resultado["conferencia"],
                 metadados=resultado["metadados"],
                 excel=excel,
+                excel_mestre=excel_mestre,
                 pdf=pdf,
                 pdf_alunos=pdf_alunos,
                 resumo=resumo,
@@ -134,6 +137,8 @@ class Pagina(BaseHTTPRequestHandler):
             permitidos = {"alunos.xlsx", "alunos.csv", "conferencia.csv", "revisao.csv", "resultado.json", "biblioteca_divergencias.json", "resultado.zip"}
             if job and job.get("excel"):
                 permitidos.add(job["excel"])
+            if job and job.get("excel_mestre"):
+                permitidos.add(job["excel_mestre"])
             if job and job.get("pdf"):
                 permitidos.add(job["pdf"])
             if job and job.get("pdf_alunos"):
