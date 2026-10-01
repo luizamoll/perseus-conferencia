@@ -54,19 +54,20 @@ A compatibilidade histórica está autorizada somente para `Fatura_Final_Ref_Ago
 
 `SETRA` deixou de ser pendência e agora é **GRADUAÇÃO**.
 
-## Compatibilidade histórica que reproduz a planilha rosa original
+## Siglas permanentes e compatibilidade histórica
 
-Siglas históricas:
+As siglas abaixo já possuem mapeamento conhecido e permanecem válidas em competências futuras; não devem voltar para a lista de verificação apenas porque mudou o mês:
 
-- CIB → GRADUAÇÃO
+- ARTVI → GRADUAÇÃO
+- CBIOL → GRADUAÇÃO
+- EFL → GRADUAÇÃO
 - GECOO → GRADUAÇÃO
 - GEQUA → POS
-- EFL → GRADUAÇÃO
-- CBIOL → GRADUAÇÃO
 - GESSP → GRADUAÇÃO
-- ARTVI → GRADUAÇÃO
 - LEPOL → GRADUAÇÃO
 - QUIM → GRADUAÇÃO
+
+`CIB` continua sendo uma exceção histórica: a legenda oficial informa DI, enquanto agosto/setembro o tratam como GRADUAÇÃO. Essa divergência não é promovida automaticamente a regra futura.
 
 Combinações históricas exatas:
 
