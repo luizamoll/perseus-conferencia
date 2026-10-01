@@ -7,6 +7,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 from openpyxl.formatting.rule import CellIsRule
+from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from apresentacao import divergencias, resumo_resultado
 from referencia import CATEGORIAS_REFERENCIA, referencia_visual, total_consolidado
@@ -27,6 +28,22 @@ def nome_excel(resultado):
 
 def nome_pdf(resultado):
     return nome_excel(resultado).replace('Resultado_', 'Relatorio_').replace('.xlsx','.pdf')
+
+
+def nome_excel_mestre(resultado):
+    competencia=(resultado.get('classificacao',{}) or {}).get('competencia_operacional','')
+    if not competencia:
+        meta=resultado.get('metadados',{})
+        m=re.fullmatch(r'(\\d{4})/(0[1-9]|1[0-2])',meta.get('competencia_fatura',''))
+        competencia=f'Fatura_Final_Ref_{MESES[int(m[2])-1]}_{m[1]}' if m else 'Fatura_Final_Ref'
+    seguro=re.sub(r'[^A-Za-z0-9_-]+','_',competencia).strip('_')
+    return f'Para_Colar_{seguro}.xlsx'
+
+
+PLANILHA_MESTRE = [
+    'Aluno','Curso','Data da Coleta','Status na Data da Coleta',
+    'Status Atual','Unidade','Tipo de Curso','STATUS_CURSO','COMPETENCIA'
+]
 
 
 ALUNOS = [
@@ -174,6 +191,72 @@ def salvar_excel(resultado,caminho):
         celula(ws.cell(2,4),'Sem divergências identificadas','Problema encontrado')
         celula(ws.cell(2,5),'Não foram identificadas pendências de leitura, classificação ou quantidade nesta execução.','Motivo compreensível')
     formatar(ws,REVISAO)
+    wb.save(caminho)
+
+
+def salvar_excel_mestre(resultado,caminho):
+    """Gera uma planilha enxuta, com a mesma estrutura usada na planilha mestre."""
+    resumo_resultado(resultado)
+    classificacao=resultado.get('classificacao',{})
+    auditoria=classificacao.get('auditoria') or []
+    registros=resultado.get('registros') or []
+    if len(auditoria) != len(registros):
+        raise ValueError('Não foi possível gerar a planilha mestre: classificação e registros estão desalinhados.')
+
+    competencia=classificacao.get('competencia_operacional','')
+    if not competencia:
+        meta=resultado.get('metadados',{})
+        m=re.fullmatch(r'(\\d{4})/(0[1-9]|1[0-2])',meta.get('competencia_fatura',''))
+        competencia=f'Fatura_Final_Ref_{MESES[int(m[2])-1]}_{m[1]}' if m else 'Fatura_Final_Ref'
+
+    wb=Workbook()
+    ws=wb.active
+    ws.title=competencia[:31]
+    ws.sheet_view.showGridLines=True
+    ws.freeze_panes='A2'
+    ws.sheet_view.zoomScale=100
+    ws.append(PLANILHA_MESTRE)
+
+    for registro,classe in zip(registros,auditoria):
+        linha={
+            **registro,
+            'STATUS_CURSO':classe.get('categoria_final') or 'NÃO LOCALIZADO',
+            'COMPETENCIA':competencia,
+        }
+        ws.append([linha.get(campo,'') for campo in PLANILHA_MESTRE])
+
+    larguras={
+        'Aluno':52,'Curso':32,'Data da Coleta':24,'Status na Data da Coleta':28,
+        'Status Atual':22,'Unidade':12,'Tipo de Curso':18,'STATUS_CURSO':24,'COMPETENCIA':34,
+    }
+    for i,campo in enumerate(PLANILHA_MESTRE,1):
+        ws.column_dimensions[get_column_letter(i)].width=larguras[campo]
+        cab=ws.cell(1,i)
+        cab.font=Font(name='Calibri',size=11,bold=True,color='000000')
+        cab.fill=PatternFill('solid',fgColor='70AD47')
+        cab.alignment=Alignment(vertical='center',horizontal='center')
+
+    for row in ws.iter_rows(min_row=2):
+        for cell in row:
+            cell.font=Font(name='Calibri',size=11,color='000000')
+            cell.alignment=Alignment(vertical='center',horizontal='left',wrap_text=False)
+        data=row[2]
+        if isinstance(data.value,str) and re.fullmatch(r'\\d{2}/\\d{2}/\\d{4}',data.value):
+            try:
+                data.value=datetime.strptime(data.value,'%d/%m/%Y')
+                data.number_format='dd/mm/yyyy'
+            except ValueError:
+                pass
+
+    if ws.max_row >= 2:
+        tabela=Table(displayName='TabelaParaPlanilhaMestre',ref=f'A1:I{ws.max_row}')
+        tabela.tableStyleInfo=TableStyleInfo(
+            name='TableStyleMedium4',
+            showFirstColumn=False,showLastColumn=False,
+            showRowStripes=False,showColumnStripes=False,
+        )
+        ws.add_table(tabela)
+    ws.auto_filter.ref=f'A1:I{ws.max_row}'
     wb.save(caminho)
 
 
