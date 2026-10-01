@@ -1,5 +1,5 @@
 {
-  "versao": "reorganizacao_negocio_2026-09-11_v5",
+  "versao": "reorganizacao_negocio_2026-10-01_v6",
   "fonte": "Regras de negócio confirmadas + referências operacionais de agosto/setembro de 2026",
   "descricao": "Separa conhecimento confirmado pela área, compatibilidade histórica e pendências reais. A legenda oficial continua preservada em regras_status_curso.json. A distribuição por STATUS_CURSO ainda é provisória enquanto o cálculo empresarial completo não for reconstruído.",
   "confirmados_negocio": {
@@ -25,15 +25,7 @@
     "Fatura_Final_Ref_Setembro"
   ],
   "mapeamentos_historicos_compatibilidade": {
-    "CIB": "GRADUAÇÃO",
-    "GECOO": "GRADUAÇÃO",
-    "GEQUA": "POS",
-    "EFL": "GRADUAÇÃO",
-    "CBIOL": "GRADUAÇÃO",
-    "GESSP": "GRADUAÇÃO",
-    "ARTVI": "GRADUAÇÃO",
-    "LEPOL": "GRADUAÇÃO",
-    "QUIM": "GRADUAÇÃO"
+    "CIB": "GRADUAÇÃO"
   },
   "combinacoes_historicas_compatibilidade": {
     "ESGSC|PSO": "GRADUAÇÃO",
@@ -44,8 +36,8 @@
     "CALCULO_STATUS_CURSO": "A categoria final não é definida apenas por semestre ou por uma tabela simples de siglas. A área informou que existe um cálculo para determinar a situação do aluno. Esse cálculo empresarial ainda precisa ser documentado e reproduzido antes de considerar os totais por categoria como definitivos."
   },
   "observacoes": {
-    "CIB": "A legenda oficial informa DI, mas os quadros históricos de agosto e setembro classificam CIB como Graduação. CIB permanece apenas como compatibilidade histórica até a regra empresarial completa ser confirmada.",
     "15": "É um código de curso real. Não tratá-lo como anomalia, erro de extração ou sigla inventada. O fato de estar ligado ao curso do aluno não autoriza, sozinho, fixar STATUS_CURSO como MBA ou outra categoria.",
+    "CIB": "A legenda oficial informa DI, mas os quadros históricos de agosto e setembro classificam CIB como Graduação. CIB permanece apenas como compatibilidade histórica até a regra empresarial completa ser confirmada.",
     "SETRA": "Confirmado como Graduação em Segurança do Trabalho.",
     "calculo_status_curso": "O total de alunos extraídos pode estar correto mesmo quando a distribuição entre categorias não bate. A classificação atual por legenda/biblioteca deve ser tratada como provisória até a lógica de cálculo da situação do aluno ser reconstruída.",
     "prioridade": "1) cálculo empresarial confirmado da situação do aluno; 2) regras de negócio confirmadas; 3) legenda oficial; 4) compatibilidade histórica somente nas competências explicitamente registradas; 5) pendência explícita quando não houver base segura.",
