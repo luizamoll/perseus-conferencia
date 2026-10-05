@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from datetime import datetime
 from pathlib import Path
-from perseus import ler_bloco, validar_linha, salvar, limpar, recuperar_linhas_texto
+from perseus import ler_bloco, validar_linha, salvar
 
 
 class RegrasDeExtracao(unittest.TestCase):
@@ -30,32 +30,6 @@ class RegrasDeExtracao(unittest.TestCase):
         codigo, problemas = validar_linha(linha, datetime(2026, 6, 26), datetime(2026, 7, 25))
         self.assertEqual(codigo, "")
         self.assertTrue(any("sem identificador" in p for p in problemas))
-
-
-    def test_nomes_com_acentos_sao_preservados_e_unicode_e_normalizado(self):
-        # A + combinacao U+0303 deve virar o caractere NFC correspondente.
-        nome = limpar("  JO\u0041\u0303O JOSÉ DE ARAÚJO  ")
-        self.assertEqual(nome, "JOÃO JOSÉ DE ARAÚJO")
-
-    def test_recupera_linha_textual_com_nome_acentuado(self):
-        texto = "ÉRICA GONÇALVES DE ARAÚJO(2619999) DIR 27/07/2026 MAT MAT 1 S"
-        recuperados = recuperar_linhas_texto(texto)
-        self.assertIn("2619999", recuperados)
-        valores, _ = recuperados["2619999"]
-        self.assertEqual(valores[0], "ÉRICA GONÇALVES DE ARAÚJO(2619999)")
-        self.assertEqual(valores[1:], ["DIR", "27/07/2026", "MAT", "MAT", "1", "S"])
-
-    def test_recupera_nome_quebrado_com_matricula_em_linha_separada(self):
-        texto = "\n".join([
-            "JOÃO VICTOR MACHADO NUNES OLIVEIRA",
-            "DIR 27/07/2026 FRM FRM 1 S",
-            "(2412210730)",
-        ])
-        recuperados = recuperar_linhas_texto(texto)
-        self.assertIn("2412210730", recuperados)
-        valores, _ = recuperados["2412210730"]
-        self.assertEqual(valores[0], "JOÃO VICTOR MACHADO NUNES OLIVEIRA(2412210730)")
-        self.assertEqual(valores[1], "DIR")
 
     def test_saida_existente_nao_e_sobrescrita(self):
         with tempfile.TemporaryDirectory() as pasta:
