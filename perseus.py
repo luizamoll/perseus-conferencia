@@ -6,6 +6,7 @@ import csv
 import hashlib
 import json
 import re
+import unicodedata
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -18,10 +19,78 @@ CAMPOS = ["Aluno", "Curso", "Data da Coleta", "Status na Data da Coleta",
           "Status Atual", "Unidade", "Tipo de Curso"]
 BLOCO = re.compile(r"(\d{2}/\d{4})\s*\((\d{2}/\d{2}/\d{4})\s+até\s+(\d{2}/\d{2}/\d{4})\)\s*Coletado:\s*(\d+)\s+Calculado:\s*(\d+)")
 CABECALHO = re.compile(r"Contrato:\s*(\S+)\s+Competência:\s*(\d{4}/\d{2})\s+Quantidade Faturada:\s*(\d+)")
+IDENTIFICADOR_TEXTO = re.compile(r"\((DIs\d+|\d+)\)")
+IDENTIFICADOR_ISOLADO = re.compile(r"^\((DIs\d+|\d+)\)$")
+IDENTIFICADOR_COM_RESTO = re.compile(r"^\((DIs\d+|\d+)\)\s+(.+)$")
+LINHA_TEXTO = re.compile(
+    r"^(?P<aluno>.+?\((?P<identificador>DIs\d+|\d+)\))\s+"
+    r"(?P<curso>[A-ZÀ-ÖØ-Ý0-9]+(?:\s*,\s*[A-ZÀ-ÖØ-Ý0-9]+)*)\s+"
+    r"(?P<data>\d{2}/\d{2}/\d{4}(?:\s*,\s*\d{2}/\d{2}/\d{4})*)\s+"
+    r"(?P<status_coleta>[A-ZÀ-ÖØ-Ý]+(?:\s*,\s*[A-ZÀ-ÖØ-Ý]+)*)\s+"
+    r"(?P<status_atual>[A-ZÀ-ÖØ-Ý]+(?:\s*,\s*[A-ZÀ-ÖØ-Ý]+)*)\s+"
+    r"(?P<unidade>\d+(?:\s*,\s*\d+)*)\s+"
+    r"(?P<tipo>[A-Z](?:\s*,\s*[A-Z])*)$"
+)
 
 
 def limpar(valor):
-    return re.sub(r"\s+", " ", valor or "").strip()
+    """Normaliza Unicode e espaços sem apagar acentos ou cedilha."""
+    texto = unicodedata.normalize("NFC", str(valor or ""))
+    return re.sub(r"\s+", " ", texto).strip()
+
+
+def _interpretar_linha_texto(linha):
+    m = LINHA_TEXTO.fullmatch(limpar(linha))
+    if not m:
+        return None
+    return [
+        limpar(m["aluno"]),
+        limpar(m["curso"]),
+        limpar(m["data"]),
+        limpar(m["status_coleta"]),
+        limpar(m["status_atual"]),
+        limpar(m["unidade"]),
+        limpar(m["tipo"]),
+    ]
+
+
+def recuperar_linhas_texto(texto):
+    """Recupera linhas que aparecem no texto do PDF mas podem escapar da tabela.
+
+    O Perseus às vezes quebra nomes longos e coloca a matrícula em outra linha.
+    A recuperação é conservadora: só aceita uma linha quando os sete campos podem
+    ser reconstruídos pelo formato conhecido do relatório.
+    """
+    linhas = [limpar(linha) for linha in (texto or "").splitlines()]
+    linhas = [linha for linha in linhas if linha]
+    encontrados = {}
+
+    def guardar(candidato, numero_linha):
+        valores = _interpretar_linha_texto(candidato)
+        if not valores:
+            return
+        m = re.search(r"\((DIs\d+|\d+)\)\s*$", valores[0])
+        if m:
+            encontrados.setdefault(m[1], (valores, numero_linha))
+
+    for i, linha in enumerate(linhas):
+        guardar(linha, i + 1)
+
+        isolado = IDENTIFICADOR_ISOLADO.fullmatch(linha)
+        if isolado:
+            codigo = isolado[1]
+            # Ordem observada no texto extraído: NOME / CAMPOS / (MATRÍCULA)
+            if i >= 2:
+                guardar(f"{linhas[i-2]}({codigo}) {linhas[i-1]}", i - 1)
+            # Outra forma possível: NOME / (MATRÍCULA) / CAMPOS
+            if i >= 1 and i + 1 < len(linhas):
+                guardar(f"{linhas[i-1]}({codigo}) {linhas[i+1]}", i)
+
+        com_resto = IDENTIFICADOR_COM_RESTO.fullmatch(linha)
+        if com_resto and i >= 1:
+            guardar(f"{linhas[i-1]}({com_resto[1]}) {com_resto[2]}", i)
+
+    return encontrados
 
 
 def ler_bloco(texto):
@@ -118,6 +187,7 @@ def extrair(pdf_path, periodo=None, progresso=None):
                     blocos[chave] = {**declarado, "paginas": []}
             tabelas = pagina.extract_tables()
             linhas_na_pagina = 0
+            ids_pagina_extraidos = set()
             for tabela_n, tabela in enumerate(tabelas, 1):
                 contexto = None
                 tabela_alunos = False
@@ -156,9 +226,65 @@ def extrair(pdf_path, periodo=None, progresso=None):
                                 "Página": pagina_n, "Tabela": tabela_n, "Linha": linha_n,
                                 "Revisar": "; ".join(problemas), "Células originais": linha}
                     registros.append(registro)
+                    if codigo:
+                        ids_pagina_extraidos.add(codigo)
                     linhas_na_pagina += 1
                     for problema in problemas:
                         revisao.append({"pagina": pagina_n, "tabela": tabela_n, "linha": linha_n, "periodo": chave, "Aluno": registro["Aluno"], "Identificador": codigo, "Curso": registro["Curso"], "motivo": problema, "dados_originais": linha})
+            # Segunda leitura conservadora: alguns PDFs mantêm o aluno no texto,
+            # mas a biblioteca de tabelas pode perder uma linha inteira. Recuperamos
+            # somente registros com os sete campos reconhecíveis e matrícula inequívoca.
+            blocos_relevantes = [
+                m for m in blocos_pagina
+                if alvo == "todos" or m[1] == alvo
+            ]
+            recuperados = recuperar_linhas_texto(texto)
+            contexto_fallback = ler_bloco(blocos_relevantes[0][0]) if len(blocos_relevantes) == 1 else None
+            if contexto_fallback:
+                inicio_fb = datetime.strptime(contexto_fallback["inicio"], "%d/%m/%Y")
+                fim_fb = datetime.strptime(contexto_fallback["fim"], "%d/%m/%Y")
+                for codigo_texto in sorted(IDENTIFICADOR_TEXTO.findall(texto)):
+                    if codigo_texto in ids_pagina_extraidos or codigo_texto not in recuperados:
+                        continue
+                    valores, linha_texto = recuperados[codigo_texto]
+                    codigo, problemas = validar_linha(valores, inicio_fb, fim_fb)
+                    if not codigo or codigo != codigo_texto:
+                        continue
+                    motivo_recuperacao = "Registro recuperado do texto da página porque não apareceu na tabela extraída"
+                    problemas = [motivo_recuperacao, *problemas]
+                    chave = contexto_fallback["periodo"]
+                    registro = {
+                        **dict(zip(CAMPOS, valores)),
+                        "Identificador": codigo,
+                        "Período de coleta": chave,
+                        "Competência da fatura": metadados["competencia_fatura"],
+                        "Página": pagina_n,
+                        "Tabela": 0,
+                        "Linha": linha_texto,
+                        "Revisar": "; ".join(dict.fromkeys(problemas)),
+                        "Células originais": valores,
+                    }
+                    registros.append(registro)
+                    ids_pagina_extraidos.add(codigo)
+                    linhas_na_pagina += 1
+                    for problema in dict.fromkeys(problemas):
+                        revisao.append({
+                            "pagina": pagina_n, "tabela": 0, "linha": linha_texto,
+                            "periodo": chave, "Aluno": registro["Aluno"],
+                            "Identificador": codigo, "Curso": registro["Curso"],
+                            "motivo": problema, "dados_originais": valores,
+                        })
+
+            # Se a matrícula aparece no texto mas nem a tabela nem a recuperação
+            # conseguiram formar os sete campos, ela fica explicitamente sinalizada.
+            for codigo_texto in sorted(set(IDENTIFICADOR_TEXTO.findall(texto)) - ids_pagina_extraidos):
+                revisao.append({
+                    "pagina": pagina_n, "tabela": "", "linha": "", "periodo": alvo,
+                    "Aluno": "", "Identificador": codigo_texto, "Curso": "",
+                    "motivo": "Matrícula aparece no texto da página, mas a linha não pôde ser reconstruída automaticamente",
+                    "dados_originais": texto,
+                })
+
             if not linhas_na_pagina:
                 revisao.append({"pagina": pagina_n, "tabela": "", "linha": "", "periodo": alvo, "motivo": "Página do período selecionado sem linhas de alunos extraídas", "dados_originais": texto})
             if pagina_n == 1 or pagina_n % 20 == 0:
