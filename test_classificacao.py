@@ -100,6 +100,30 @@ class ClassificacaoTests(unittest.TestCase):
         self.assertEqual(a["categoria_final"],"GRADUAÇÃO")
         self.assertEqual(a["status_final"],"CLASSIFICADO")
 
+    def test_nomes_de_curso_com_acento_e_variacoes(self):
+        casos={
+            "Pós Grad":"POS",
+            "pós-grad":"POS",
+            "PÓS GRADUAÇÃO":"POS",
+            "POS GRAD":"POS",
+            "Graduação":"GRADUAÇÃO",
+            "APERFEIÇOAMENTO":"APERFEIÇOAMENTO",
+        }
+        for curso,categoria in casos.items():
+            with self.subTest(curso=curso):
+                a=self.classify(curso)
+                self.assertEqual(a["categoria_final"],categoria)
+                self.assertEqual(a["status_final"],"CLASSIFICADO")
+                self.assertEqual(a["cursos_originais"],curso)
+
+    def test_comparacao_de_sigla_ignora_acento_sem_mudar_original(self):
+        regras=copy.deepcopy(self.regras)
+        regras["siglas"]["PÓS"] = "POS"
+        a=classificar_registro({"Curso":"POS"},regras,self.biblioteca)
+        self.assertEqual(a["categoria_final"],"POS")
+        self.assertEqual(a["cursos_originais"],"POS")
+        self.assertEqual(a["status_final"],"CLASSIFICADO")
+
     def test_sem_substring_ou_delimitador_inventado(self):
         for curso in ["XXDIR","DIR EVE","DIR/EVE","DIR;EVE"]:
             self.assertEqual(self.classify(curso)["status_final"],"REVISAR")
