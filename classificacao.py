@@ -8,6 +8,8 @@ import copy
 import csv
 import hashlib
 import json
+import re
+import unicodedata
 from pathlib import Path
 
 from biblioteca import (
@@ -27,37 +29,69 @@ def carregar_regras(caminho=None):
     return json.loads(caminho.read_text(encoding="utf-8"))
 
 
+def normalizar_chave_curso(valor):
+    """Chave de comparação tolerante a acentos, caixa e espaços.
+
+    A escrita original do curso continua preservada no registro/exportação.
+    """
+    texto = unicodedata.normalize("NFKD", str(valor or ""))
+    texto = "".join(c for c in texto if not unicodedata.combining(c))
+    return re.sub(r"\s+", " ", texto).strip().upper()
+
+
+def _chave_equivalente(mapa, valor):
+    if valor in mapa:
+        return valor
+    alvo = normalizar_chave_curso(valor)
+    for chave in mapa:
+        if normalizar_chave_curso(chave) == alvo:
+            return chave
+    return None
+
+
+def _chave_biblioteca_equivalente(curso, biblioteca, permitir_historico=False):
+    nomes = ["confirmados_negocio", "codigos_curso_confirmados_sem_regra_status"]
+    if permitir_historico:
+        nomes.extend(["mapeamentos_historicos_compatibilidade", "mapeamentos_siglas"])
+    for nome in nomes:
+        chave = _chave_equivalente(biblioteca.get(nome, {}), curso)
+        if chave is not None:
+            return chave
+    return curso
+
+
 def cursos_do_registro(valor):
     # O relatório observado separa cursos por vírgula. Não inferimos outros delimitadores.
     if not isinstance(valor, str):
         return []
-    return [parte.strip().upper() for parte in valor.split(",")]
+    return [unicodedata.normalize("NFC", parte.strip()).upper() for parte in valor.split(",")]
 
 
 def normalizar_categoria(valor, regras=None):
     regras = carregar_regras() if regras is None else regras
     if valor is None:
         return None
-    texto = str(valor).strip().upper().replace("_", " ")
+    texto = normalizar_chave_curso(valor).replace("_", " ")
     aliases = {
-        "GRAD": "GRADUAÇÃO", "GRADUAÇÃO": "GRADUAÇÃO", "GRADUACAO": "GRADUAÇÃO",
-        "DI": "DI", "POS": "POS", "PÓS": "POS",
+        "GRAD": "GRADUAÇÃO", "GRADUACAO": "GRADUAÇÃO",
+        "DI": "DI",
+        "POS": "POS", "POS GRAD": "POS", "POS-GRAD": "POS",
+        "POS GRADUACAO": "POS", "POS-GRADUACAO": "POS",
         "MBA": "MBA", "MESTRADO": "MESTRADO",
-        "APERF": "APERFEIÇOAMENTO", "APERFEIÇOAMENTO": "APERFEIÇOAMENTO",
-        "APERFEICOAMENTO": "APERFEIÇOAMENTO",
-        "CURSO LIVRE": "CURSO LIVRE", "CURSO_LIVRE": "CURSO LIVRE",
-        "NÃO LOCALIZADO": "NÃO LOCALIZADO", "NAO LOCALIZADO": "NÃO LOCALIZADO",
-        "NÃO MAPEADO": "NÃO LOCALIZADO", "NAO MAPEADO": "NÃO LOCALIZADO",
-        "NÃO LOCALIZADO/NÃO MAPEADO": "NÃO LOCALIZADO",
-        "MÚLTIPLAS CATEGORIAS": "MÚLTIPLAS CATEGORIAS",
+        "APERF": "APERFEIÇOAMENTO", "APERFEICOAMENTO": "APERFEIÇOAMENTO",
+        "CURSO LIVRE": "CURSO LIVRE",
+        "NAO LOCALIZADO": "NÃO LOCALIZADO",
+        "NAO MAPEADO": "NÃO LOCALIZADO",
+        "NAO LOCALIZADO/NAO MAPEADO": "NÃO LOCALIZADO",
         "MULTIPLAS CATEGORIAS": "MÚLTIPLAS CATEGORIAS",
     }
     if texto in aliases:
         return aliases[texto]
     codigos = regras.get("categorias", {})
-    if texto in codigos:
-        return normalizar_categoria(codigos[texto], regras)
-    return texto
+    chave = _chave_equivalente(codigos, str(valor).strip().upper())
+    if chave is not None:
+        return normalizar_categoria(codigos[chave], regras)
+    return unicodedata.normalize("NFC", str(valor).strip().upper())
 
 
 def classificar_registro(registro, regras=None, biblioteca=None, permitir_historico=False):
@@ -73,18 +107,30 @@ def classificar_registro(registro, regras=None, biblioteca=None, permitir_histor
     for curso in cursos:
         if not curso:
             continue
-        codigo_legenda = regras.get("siglas", {}).get(curso)
-        categoria_legenda = normalizar_categoria(codigo_legenda, regras) if codigo_legenda else None
-        categoria_excecao = categoria_biblioteca(curso, biblioteca, permitir_historico)
-        origem_excecao = origem_biblioteca(curso, biblioteca, permitir_historico)
+        chave_legenda = _chave_equivalente(regras.get("siglas", {}), curso)
+        codigo_legenda = regras.get("siglas", {}).get(chave_legenda) if chave_legenda is not None else None
+        categoria_direta = normalizar_categoria(curso, regras)
+        categorias_diretas = {
+            "GRADUAÇÃO", "DI", "POS", "MBA", "MESTRADO",
+            "APERFEIÇOAMENTO", "CURSO LIVRE",
+        }
+        if categoria_direta not in categorias_diretas:
+            categoria_direta = None
+        categoria_legenda = (
+            normalizar_categoria(codigo_legenda, regras)
+            if codigo_legenda else categoria_direta
+        )
+        curso_biblioteca = _chave_biblioteca_equivalente(curso, biblioteca, permitir_historico)
+        categoria_excecao = categoria_biblioteca(curso_biblioteca, biblioteca, permitir_historico)
+        origem_excecao = origem_biblioteca(curso_biblioteca, biblioteca, permitir_historico)
         if categoria_excecao:
             categoria = normalizar_categoria(categoria_excecao, regras)
             fonte = "biblioteca"
         else:
             categoria = categoria_legenda
-            fonte = "legenda" if categoria_legenda else None
+            fonte = "legenda" if codigo_legenda else "alias_categoria" if categoria_direta else None
         if categoria is None:
-            if curso_reconhecido_sem_regra_status(curso, biblioteca):
+            if curso_reconhecido_sem_regra_status(curso_biblioteca, biblioteca):
                 # É um código real conhecido. Ele só vira divergência se, sozinho,
                 # não houver nenhuma categoria sustentada pelos demais códigos do registro.
                 sem_regra_status.append(curso)
@@ -101,7 +147,8 @@ def classificar_registro(registro, regras=None, biblioteca=None, permitir_histor
                 "biblioteca.confirmados_negocio." + curso if origem_excecao == "negocio_confirmado" else
                 "biblioteca.compatibilidade_historica." + curso if origem_excecao in {"compatibilidade_historica", "biblioteca_legada"} else
                 "biblioteca.codigos_curso_confirmados_sem_regra_status." + curso if origem_excecao == "curso_confirmado_sem_regra_status" else
-                "Legenda_Cursos_Status." + curso if fonte == "legenda" else None
+                "Legenda_Cursos_Status." + (chave_legenda or curso) if fonte == "legenda" else
+                "Alias_Categoria." + normalizar_chave_curso(curso) if fonte == "alias_categoria" else None
             ),
         })
 
