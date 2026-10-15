@@ -28,7 +28,7 @@ TRAVA = threading.Lock()
 MAX_UPLOAD = 80 * 1024 * 1024
 
 
-def processar(job, arquivo, pasta):
+def processar(job, arquivo, pasta, *, registrar_biblioteca=True):
     def progresso(pagina, total, registros):
         with TRAVA:
             job.update(pagina=pagina, paginas_pdf=total, registros=registros, etapa="Lendo e conferindo tabelas")
@@ -38,10 +38,11 @@ def processar(job, arquivo, pasta):
         resultado["metadados"].update(execucao=job.get("id") or uuid.uuid4().hex, processado_em=datetime.now(timezone.utc).isoformat(timespec="seconds"))
         resultado["classificacao"] = classificar_resultado(resultado)
         biblioteca_resumo = resultado["classificacao"].get("biblioteca", {})
-        registrar_nao_localizados(
-            biblioteca_resumo,
-            resultado["classificacao"].get("competencia_operacional", resultado["metadados"].get("competencia_fatura", "")),
-        )
+        if registrar_biblioteca:
+            registrar_nao_localizados(
+                biblioteca_resumo,
+                resultado["classificacao"].get("competencia_operacional", resultado["metadados"].get("competencia_fatura", "")),
+            )
         resumo = resumo_resultado(resultado)
         pendencias = divergencias(resultado)
         revisoes_classificacao = sum(a["status_final"] == "REVISAR" for a in resultado["classificacao"]["auditoria"])

@@ -69,3 +69,8 @@ O GitHub Actions valida a branch `feat/nova-interface` em **Linux e Windows**.
 - `iniciar.command`: iniciador do Mac.
 - `iniciar_windows.bat`: iniciador do Windows.
 - `REGRA_STATUS_CURSO.md`: regra detalhada e estado atual da reconstrução.
+
+
+## Preparação da integração com Portal UNH
+
+O novo \`servico_interno.py\` implementa a primeira API **somente entre servidores**, escutando exclusivamente \`127.0.0.1:8879\` e exigindo \`PERSEUS_SERVICE_KEY\`. A interface original \`app.py\` permanece independente em \`127.0.0.1:8878\`. **Não está liberado para colaboradores pela rede**: falta autenticação/identidade institucional no backend do Portal. Leia \`API_INTERNA.md\` antes de testar ou implantar.
