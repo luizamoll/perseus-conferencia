@@ -1,59 +1,76 @@
-# Perseus — motor e saídas auditados
+# Perseus — conferência e referência de coleta
 
-PDF Perseus → primeiro bloco de coleta → extração → classificação observacional → conferência → Excel e relatório PDF.
+PDF Perseus → primeiro bloco de coleta → extração → conferência → classificação provisória de `STATUS_CURSO` → Excel e PDFs.
 
-## Usar neste Mac
+## Abrir no Mac
 
-Encerre o servidor anterior com Control+C e abra `iniciar.command` nesta pasta. Mantenha o Terminal aberto. Selecione o PDF e clique em Processar PDF. Após a conferência, use **Baixar Excel** ou **Baixar relatório em PDF**. CSV/JSON/ZIP ficam nas opções técnicas.
+Encerre um servidor anterior com Control+C e execute `./iniciar.command`. Selecione o PDF **Alunos Coletados para Fatura** e clique em Processar relatório.
 
-Os dois PDFs reais estão em `exemplos/`. Fatura agosto de 2026 contém coleta julho de 2026; fatura setembro contém coleta agosto. A competência é lida do documento, nunca deduzida do nome do arquivo.
+## Abrir no Windows
 
-O XLSX tem Resumo, Alunos e Divergências. Identificadores são texto; listas de cursos/datas/status permanecem como na origem, sem criar alunos adicionais. Uma data única é armazenada como data Excel. Motivos administrativos aparecem na revisão; motivos técnicos e células originais permanecem no JSON.
+1. Extraia/clone o projeto em uma pasta comum, como Documentos ou Área de Trabalho.
+2. Tenha Python 3.12 ou superior instalado.
+3. Dê dois cliques em `iniciar_windows.bat`.
+4. Na primeira execução o iniciador cria `.venv` e instala as dependências automaticamente.
+5. Mantenha a janela preta aberta enquanto usa o sistema. A interface abre em `http://127.0.0.1:8878`.
 
-Cada execução tem pasta e nome próprios. Interface, Excel e PDF usam o mesmo resumo validado. Edições manuais do Excel não refazem a conferência do PDF. Resultados anteriores não são atualizados; reprocesse o documento.
+Se o Python não for encontrado, reinstale-o marcando **Add Python to PATH** e execute o iniciador novamente.
 
-## Validação
+## O que já está confiável
 
-Agosto: 2.050 informados e 2.050 extraídos, 24 registros em revisão. Setembro: 2.213 informados e 2.211 extraídos, 28 registros em revisão e uma pendência de quantidade. Nenhuma contagem foi forçada. Os 4.261 registros e suas classificações permaneceram iguais à base anterior.
+A extração e a conferência de quantidade são independentes da classificação. No relatório de setembro validado, o Perseus informa 2.213 registros e o extrator encontra 2.211, diferença −2. Nenhum aluno é inventado para fechar a conta.
 
-O mapa é observacional. CIB, cursos sem evidência e combinações conflitantes continuam para revisão. Não calcula faturamento/licenças, não decide a regra empresarial de múltiplos cursos e não preenche a planilha mestre.
+O valor `15` foi confirmado como **código de curso real**. Ele não deve ser tratado como erro, anomalia ou coluna deslocada.
 
-## Instalação em outro ambiente
+Também há significados de cursos já esclarecidos pela área, como `LPI`, `TEOC`, `EFB`, `PCG` e `SETRA`, além do conceito de DI como vínculo de disciplina isolada.
 
-Com Python 3.12 ou 3.13:
+## STATUS_CURSO ainda é provisório
 
-```sh
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python app.py
-```
+A área informou que a categoria final do aluno não é definida apenas por semestre nem por uma tabela simples `sigla → categoria`. Existe um **cálculo empresarial da situação do aluno** que ainda precisa ser reconstruído.
 
-Para outra porta, use `python app.py --porta 8879`. A instalação em outros computadores não foi homologada.
+Por isso, a distribuição em GRADUAÇÃO, DI, MBA, POS, MÚLTIPLAS CATEGORIAS etc. deve ser tratada como **provisória** neste momento. Saber que um código representa determinado curso não é suficiente, sozinho, para fixar o `STATUS_CURSO` final.
+
+A planilha rosa histórica continua útil como referência para descobrir esse cálculo. A compatibilidade histórica de agosto/setembro permanece isolada para comparação e auditoria, sem virar automaticamente regra para meses futuros.
+
+## Biblioteca de divergências
+
+A pasta `biblioteca/` contém:
+
+- `mapeamentos_operacionais.json` — fatos confirmados, códigos conhecidos sem regra final, compatibilidades históricas e pendências;
+- `README.md` — explicação das camadas;
+- `nao_localizados.json` — criado localmente e ignorado pelo Git; guarda somente siglas, contagens e competências.
+
+## Saídas
+
+O XLSX possui `Resumo`, `Referência`, `Alunos` e `Divergências`. Também são gerados relatório executivo PDF, lista completa em PDF, CSV/JSON, `biblioteca_divergencias.json` e ZIP técnico.
+
+Identificadores permanecem texto, inclusive zeros à esquerda.
 
 ## Testes
 
 ```sh
 python -m pip install -r requirements-dev.txt
 python -m unittest discover -v
-python validar_reais.py --saida resultados_teste_novos
+node --test test_interface.cjs
 ```
 
-O último comando processa os dois exemplos reais, valida os arquivos gerados e compara os identificadores com uma leitura textual independente. A pasta de saída deve ser nova. Para revalidar uma entrega existente com subpastas agosto/setembro:
-
-```sh
-python validar_reais.py --resultados-existentes /caminho/para/auditoria
-```
-
-O teste antigo em `test_mvp.py` usa `PERSEUS_AGOSTO` e `PERSEUS_SETEMBRO`; sem essas variáveis é ignorado explicitamente. A validação real acima independe dessas variáveis.
+O GitHub Actions valida a branch `feat/nova-interface` em **Linux e Windows**.
 
 ## Organização
 
-- `perseus.py`: extração, validações de leitura e gravação do conjunto de saídas.
-- `classificacao.py` e `regras_classificacao.json`: classificação independente e mapa preservados.
-- `apresentacao.py`: validação de consistência, resumo comum, contagem por registro e explicações administrativas.
-- `exportacao.py`: XLSX e PDF.
-- `app.py`: servidor local, execução identificada e downloads isolados.
-- `test_auditoria.py`: regressões desta rodada; demais testes preservados/adaptados à ordem das colunas.
+- `perseus.py`: extração e conferência do PDF.
+- `classificacao.py`: classificação provisória e rastreabilidade das fontes.
+- `regras_status_curso.json`: legenda oficial.
+- `biblioteca/`: fatos confirmados, compatibilidade histórica e memória local de pendências.
+- `referencia.py`: `COMPETENCIA`, cores e consolidação.
+- `exportacao.py`: XLSX e relatório executivo.
+- `pdf_alunos.py`: lista completa em PDF.
+- `app.py` + `interface/`: servidor local e interface.
+- `iniciar.command`: iniciador do Mac.
+- `iniciar_windows.bat`: iniciador do Windows.
+- `REGRA_STATUS_CURSO.md`: regra detalhada e estado atual da reconstrução.
 
-Os documentos DIAGNOSTICO.md e RELATORIO_CLASSIFICACAO.md antigos são históricos. Consulte AUDITORIA_ATUAL.md para o diagnóstico desta entrega. Os PDFs digitalizados, protegidos por senha ou com layout diferente não foram homologados; não há OCR. O fluxo padrão processa integralmente o primeiro bloco contíguo, sem somar os blocos históricos do restante do arquivo.
+
+## Preparação da integração com Portal UNH
+
+O novo `servico_interno.py` implementa a primeira API **somente entre servidores**, escutando exclusivamente `127.0.0.1:8879` e exigindo `PERSEUS_SERVICE_KEY`. A interface original `app.py` permanece independente em `127.0.0.1:8878`. **Não está liberado para colaboradores pela rede**: falta autenticação/identidade institucional no backend do Portal. Leia `API_INTERNA.md` antes de testar ou implantar.

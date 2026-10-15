@@ -1,10 +1,11 @@
-"""Comparação por registro e identificador; nunca altera as regras para fechar totais."""
+"""Comparação por registro e identificador; o histórico nunca altera a legenda oficial."""
 import argparse
 import collections
 import json
 import re
 from pathlib import Path
-from classificacao import carregar_regras, classificar_resultado, salvar_auditoria
+
+from classificacao import carregar_regras, classificar_resultado, normalizar_categoria, salvar_auditoria
 from evidencia_classificacao import ler_planilha, historico
 
 
@@ -23,7 +24,9 @@ def comparar(resultado, historicos, regras):
         h=hs[0]; a["historico"] = h
         cursos_iguais = r["Curso"] == h["Curso"]
         a["cursos_iguais_historico"] = cursos_iguais
-        a["comparacao"] = "COINCIDE" if a["categoria_final"] == h["STATUS_CURSO"] else ("REVISAO" if a["status_final"]=="REVISAR" else "DIVERGE")
+        historico_normalizado=normalizar_categoria(h.get("STATUS_CURSO"),regras)
+        a["status_historico_normalizado"]=historico_normalizado
+        a["comparacao"] = "COINCIDE" if a["categoria_final"] == historico_normalizado else ("REVISAO" if a["status_final"]=="REVISAR" else "DIVERGE")
         cont[a["comparacao"]]+=1
         if not cursos_iguais: cont["CURSOS_DIFERENTES"]+=1
         for motivo in a["motivos_revisao"]: motivos[motivo]+=1
@@ -33,8 +36,8 @@ def comparar(resultado, historicos, regras):
               "comparacao":dict(cont), "coincidencias":cont["COINCIDE"], "divergencias_classificadas":cont["DIVERGE"],
               "casos_revisao":cont["REVISAO"], "diferencas_status_incluindo_revisao":cont["DIVERGE"]+cont["REVISAO"],
               "motivos_revisao":dict(motivos), "padroes_diferentes":dict(padroes),
-              "categorias_historicas":dict(collections.Counter(h["STATUS_CURSO"] for v in index.values() for h in v)),
-              "categorias_novas":dict(collections.Counter(a["categoria_final"] or "REVISAR" for a in saida["auditoria"]))}
+              "categorias_historicas":dict(collections.Counter(normalizar_categoria(h["STATUS_CURSO"],regras) for v in index.values() for h in v)),
+              "categorias_novas":dict(collections.Counter(a["categoria_final"] or "NÃO LOCALIZADO" for a in saida["auditoria"]))}
     return saida,resumo
 
 
@@ -49,5 +52,6 @@ def main():
         salvar_auditoria(audit,a.saida/mes)
     (a.saida/"resumo.json").write_text(json.dumps(res,ensure_ascii=False,indent=2),encoding="utf-8")
     print(json.dumps(res,ensure_ascii=False,indent=2))
+
 
 if __name__=="__main__":main()

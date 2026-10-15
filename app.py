@@ -15,8 +15,11 @@ from urllib.parse import unquote, urlparse
 
 from perseus import extrair, salvar
 from classificacao import classificar_resultado
-from exportacao import nome_excel, nome_pdf
+from exportacao import nome_excel, nome_pdf, nome_excel_mestre, salvar_excel_mestre
+from categorias_excel import adicionar_visao_por_categoria
+from pdf_alunos import nome_pdf_alunos, salvar_pdf_alunos
 from apresentacao import divergencias, resumo_resultado
+from biblioteca import registrar_nao_localizados
 
 BASE = Path(__file__).resolve().parent
 TOKEN = secrets.token_urlsafe(32)
@@ -25,7 +28,7 @@ TRAVA = threading.Lock()
 MAX_UPLOAD = 80 * 1024 * 1024
 
 
-def processar(job, arquivo, pasta):
+def processar(job, arquivo, pasta, *, registrar_biblioteca=True):
     def progresso(pagina, total, registros):
         with TRAVA:
             job.update(pagina=pagina, paginas_pdf=total, registros=registros, etapa="Lendo e conferindo tabelas")
@@ -34,24 +37,55 @@ def processar(job, arquivo, pasta):
         resultado["metadados"]["arquivo"] = job["arquivo"]
         resultado["metadados"].update(execucao=job.get("id") or uuid.uuid4().hex, processado_em=datetime.now(timezone.utc).isoformat(timespec="seconds"))
         resultado["classificacao"] = classificar_resultado(resultado)
+        biblioteca_resumo = resultado["classificacao"].get("biblioteca", {})
+        if registrar_biblioteca:
+            registrar_nao_localizados(
+                biblioteca_resumo,
+                resultado["classificacao"].get("competencia_operacional", resultado["metadados"].get("competencia_fatura", "")),
+            )
         resumo = resumo_resultado(resultado)
         pendencias = divergencias(resultado)
         revisoes_classificacao = sum(a["status_final"] == "REVISAR" for a in resultado["classificacao"]["auditoria"])
         destino = pasta / "resultado"
         with TRAVA:
-            job.update(etapa="Preparando Excel e relatório PDF", registros=len(resultado["registros"]))
+            job.update(etapa="Preparando Excel e relatórios PDF", registros=len(resultado["registros"]))
         salvar(resultado, destino)
-        pdf = nome_pdf(resultado)
         excel = nome_excel(resultado)
+        adicionar_visao_por_categoria(destino / excel, resultado)
+        excel_mestre = nome_excel_mestre(resultado)
+        salvar_excel_mestre(resultado, destino / excel_mestre)
+        (destino / "biblioteca_divergencias.json").write_text(
+            json.dumps(biblioteca_resumo, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        pdf = nome_pdf(resultado)
+        pdf_alunos = nome_pdf_alunos(resultado)
+        salvar_pdf_alunos(resultado, destino / pdf_alunos)
         with zipfile.ZipFile(pasta / "resultado.zip", "w", zipfile.ZIP_DEFLATED) as z:
             for p in destino.iterdir():
                 z.write(p, p.name)
+        classificacao = resultado["classificacao"]
         with TRAVA:
-            job.update(estado="concluido", registros=len(resultado["registros"]),
-                       conferencia=resultado["conferencia"], metadados=resultado["metadados"],
-                       excel=excel, pdf=pdf, resumo=resumo, divergencias=pendencias[:10], casos_revisao=sum(r["Registros para revisão"] for r in resumo), total_pendencias=len(pendencias),
-                       alertas=len(resultado["revisao"]), revisoes_classificacao=revisoes_classificacao,
-                       amostra=[{k:v for k,v in r.items() if k != "Células originais"} for r in resultado["registros"][:10]])
+            job.update(
+                estado="concluido",
+                registros=len(resultado["registros"]),
+                conferencia=resultado["conferencia"],
+                metadados=resultado["metadados"],
+                excel=excel,
+                excel_mestre=excel_mestre,
+                pdf=pdf,
+                pdf_alunos=pdf_alunos,
+                resumo=resumo,
+                divergencias=pendencias,
+                casos_revisao=sum(r["Registros para revisão"] for r in resumo),
+                total_pendencias=len(pendencias),
+                alertas=len(resultado["revisao"]),
+                revisoes_classificacao=revisoes_classificacao,
+                referencia=classificacao.get("referencia", {}),
+                consolidacao=classificacao.get("consolidacao", []),
+                competencia_operacional=classificacao.get("competencia_operacional", ""),
+                biblioteca=classificacao.get("biblioteca", {}),
+                amostra=[{k:v for k,v in r.items() if k != "Células originais"} for r in resultado["registros"][:10]],
+            )
     except Exception as exc:
         with TRAVA:
             job.update(estado="erro", erro=(str(exc) if isinstance(exc, ValueError) else "Não foi possível concluir a leitura ou salvar os resultados. Verifique se o PDF abre sem senha e se há espaço na pasta de resultados. Tente novamente."), detalhe=f"{type(exc).__name__}: {exc}")
@@ -101,11 +135,15 @@ class Pagina(BaseHTTPRequestHandler):
             id_job, nome = partes[1:]
             with TRAVA:
                 job = TRABALHOS.get(id_job)
-            permitidos = {"alunos.xlsx", "alunos.csv", "conferencia.csv", "revisao.csv", "resultado.json", "resultado.zip"}
+            permitidos = {"alunos.xlsx", "alunos.csv", "conferencia.csv", "revisao.csv", "resultado.json", "biblioteca_divergencias.json", "resultado.zip"}
             if job and job.get("excel"):
                 permitidos.add(job["excel"])
+            if job and job.get("excel_mestre"):
+                permitidos.add(job["excel_mestre"])
             if job and job.get("pdf"):
                 permitidos.add(job["pdf"])
+            if job and job.get("pdf_alunos"):
+                permitidos.add(job["pdf_alunos"])
             if not job or job["estado"] != "concluido" or nome not in permitidos:
                 return self.responder(404, {"erro": "Resultado indisponível."})
             arquivo = self.server.destino / id_job / (nome if nome.endswith(".zip") else "resultado/" + nome)
