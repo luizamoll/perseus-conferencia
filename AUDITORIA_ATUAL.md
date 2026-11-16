@@ -2,6 +2,15 @@
 
 Atualização concluída em 08/09/2026. O escopo operacional continua sendo o primeiro bloco contíguo de coleta de cada PDF, sem somar os períodos históricos do restante do documento.
 
+## Pré-conferência da fatura de novembro de 2026 (16/11/2026)
+
+- Entrada correta: **Alunos coletados para Fatura - Novembro de 2026.PDF** (561 páginas). A fatura financeira separada tem quatro páginas e não serve como lista de alunos.
+- Primeiro bloco de coleta: **10/2026** (26/09/2026 a 25/10/2026), páginas 1–102, com **2.310** linhas e **2.310** IDs distintos, sem nomes/IDs ausentes ou problemas de multiplicidade de colunas encontrados nesta checagem estrutural.
+- Cabeçalho informa competência de faturamento **2026/11** e quantidade faturada **2.119**. Não confundir o total faturado pela média contratual com os 2.310 registros coletados no bloco.
+- **66 códigos/siglas de curso observados**: 61 mapeados na legenda, quatro nas regras confirmadas e código `15` reconhecido sem `STATUS_CURSO` isolado; nenhum código totalmente desconhecido no inventário.
+- O parser agora alerta quando um identificador vem sem nome legível ou o nome tem caracteres danificados. A seleção de PDF financeiro recebe orientação específica.
+- Material original com nomes de alunos não foi versionado. Testes de regressão usam exemplos fictícios. **A execução completa pelo aplicativo e as saídas XLSX/PDF ainda devem ser verificadas**, assim como a classificação provisória.
+
 ## Estado atual
 
 Fluxo validado:
