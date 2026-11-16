@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 from openpyxl import load_workbook
 from perseus import CAMPOS, extrair, salvar
+from classificacao import classificar_resultado
 
 HEADER='Contrato: 123 Competência: 2026/08 Quantidade Faturada: 2'
 BLOCK='07/2026 (26/06/2026 até 25/07/2026) Coletado: 2 Calculado: 2'
@@ -50,14 +51,17 @@ class ExtractionTests(unittest.TestCase):
     def test_excel_roundtrip_and_technical_exports(self):
         r=self.run_pdf([Page([ROW])])
         r['registros'][0]['Aluno']='=HYPERLINK("bad")'
+        r['classificacao']=classificar_resultado(r)
         with tempfile.TemporaryDirectory() as d:
             out=Path(d)/'result';salvar(r,out)
             wb=load_workbook(next(out.glob('*.xlsx')))
-            self.assertEqual(wb.sheetnames,['Resumo','Alunos','Divergências'])
+            self.assertEqual(wb.sheetnames,['Resumo','Referência','Alunos','Divergências'])
             ws=wb['Alunos'];self.assertEqual(ws['A2'].data_type,'s')
             self.assertEqual(ws['B2'].value,'0001')
             self.assertEqual(ws['B2'].data_type,'s')
-            self.assertEqual(ws['F2'].value,ROW[2])
+            self.assertEqual(ws['D2'].value,ROW[2])
+            self.assertEqual(ws['I2'].value,'MÚLTIPLAS CATEGORIAS')
+            self.assertEqual(ws['J2'].value,'Fatura_Final_Ref_Agosto_2026')
             self.assertEqual(ws.freeze_panes,'B2')
             self.assertTrue(ws.auto_filter.ref)
             self.assertEqual(json.loads((out/'resultado.json').read_text()),r)
@@ -85,4 +89,8 @@ class RealPDFTests(unittest.TestCase):
                     self.assertEqual(r['registros'],old['registros'])
                     self.assertEqual(r['conferencia'],old['conferencia'])
                 out=os.getenv('PERSEUS_TEST_OUTPUT')
-                if out: salvar(r,Path(out)/mes.lower())
+                if out:
+                    r['classificacao']=classificar_resultado(r)
+                    salvar(r,Path(out)/mes.lower())
+
+if __name__=='__main__': unittest.main()

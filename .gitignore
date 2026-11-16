@@ -16,3 +16,7 @@ resultado/
 resultados/
 outputs/
 temp/
+
+# Biblioteca local de divergências (sem dados pessoais, mas específica do computador)
+biblioteca/nao_localizados.json
+biblioteca/*.tmp
