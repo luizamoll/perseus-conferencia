@@ -40,6 +40,13 @@ def validar_linha(valores, inicio, fim):
     codigo = identificador[1].strip() if identificador else ""
     if not codigo:
         problemas.append("Aluno sem identificador final entre parênteses")
+    # Nome quebrado em linhas e valido; identificador isolado nao significa
+    # que o nome do aluno foi capturado corretamente.
+    nome = (valores[0][:identificador.start()] if identificador else valores[0]).strip()
+    if not nome:
+        problemas.append("Aluno sem nome legível antes do identificador")
+    if "\ufffd" in nome or "\x00" in nome:
+        problemas.append("Nome com caracteres ilegíveis na extração")
     for campo, valor in zip(CAMPOS, valores):
         if not valor:
             problemas.append(f"Campo vazio: {campo}")
@@ -82,7 +89,7 @@ def extrair(pdf_path, periodo=None, progresso=None):
             if pagina_n == 1:
                 m = CABECALHO.search(texto)
                 if not m:
-                    raise ValueError("Cabeçalho Perseus não reconhecido; nenhuma saída foi criada.")
+                    raise ValueError("PDF não reconhecido. Selecione o relatório 'Alunos Coletados para Fatura' (lista de alunos), não a fatura financeira. Nenhuma saída foi criada.")
                 metadados.update(contrato=m[1], competencia_fatura=m[2], quantidade_faturada=int(m[3]))
                 if alvo is None:
                     primeiro = ler_bloco(texto)
