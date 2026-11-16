@@ -40,6 +40,14 @@ A pasta `biblioteca/` contém:
 - `README.md` — explicação das camadas;
 - `nao_localizados.json` — criado localmente e ignorado pelo Git; guarda somente siglas, contagens e competências.
 
+## Pré-validação de novembro/2026
+
+Para a fatura de **2026/11**, selecione **Alunos coletados para Fatura - Novembro de 2026.PDF**. O arquivo **Fatura - Novembro de 2026.PDF** é o resumo financeiro e **não** contém a tabela de alunos esperada pelo extrator; agora a mensagem de erro orienta sobre essa diferença.
+
+Na verificação da estrutura do PDF de alunos: **561 páginas**, com **102 páginas no primeiro bloco (coleta 10/2026, de 26/09 a 25/10)**; **2.310 linhas de alunos**, **2.310 identificadores distintos**, nenhuma linha sem nome/ID ou com quantidade de colunas divergente detectada nesse bloco. A **quantidade faturada de 2.119** é um cálculo contratual separado e **não** deve ser comparada diretamente à quantidade da coleta de outubro. A legenda mais regras de negócio já reconhecem os **66 códigos de curso observados**; o código `15` é conhecido, mas isolado não define a categoria final.
+
+O PDF real e os nomes dos alunos **não estão no Git**. Os testes automatizados usam apenas dados fictícios e siglas, em `test_novembro_2026.py`. A verificação estrutural não substitui o processamento integral no aplicativo nem a conferência das divergências de `STATUS_CURSO`, que continuam provisórias.
+
 ## Saídas
 
 O XLSX possui `Resumo`, `Referência`, `Alunos` e `Divergências`. Também são gerados relatório executivo PDF, lista completa em PDF, CSV/JSON, `biblioteca_divergencias.json` e ZIP técnico.
